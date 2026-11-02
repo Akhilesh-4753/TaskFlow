@@ -1,0 +1,78 @@
+<!-- Edit Task Modal -->
+<div class="modal-overlay" id="editTaskModal" role="dialog" aria-modal="true" aria-labelledby="editModalTitle">
+  <div class="modal-box" role="document">
+    <div class="modal-header">
+      <h4 id="editModalTitle"><i class="bi bi-pencil-square" style="color:var(--primary);margin-right:6px;"></i>Edit Task</h4>
+      <button class="modal-close-btn" onclick="closeEditModal()" title="Close" aria-label="Close modal">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+
+    <form id="editTaskForm" novalidate>
+      {% csrf_token %}
+      <input type="hidden" id="edit_task_id" name="task_id" value="">
+      <div class="modal-body">
+
+        <!-- Title -->
+        <div class="form-group">
+          <label class="form-label" for="edit_title">Title <span class="required">*</span></label>
+          <input type="text" id="edit_title" name="title" class="form-control"
+                 placeholder="Enter task title" maxlength="200" required>
+          <div class="d-flex justify-content-between">
+            <div class="invalid-feedback" id="edit_title_error"></div>
+            <div class="char-counter"><span id="edit_title_count">0</span>/200</div>
+          </div>
+        </div>
+
+        <!-- Description -->
+        <div class="form-group">
+          <div class="d-flex justify-content-between align-items-center mb-1">
+            <label class="form-label mb-0" for="edit_description">Description</label>
+            <button type="button" class="btn-ai-suggest" onclick="suggestDescriptionForEdit()">
+              <i class="bi bi-stars"></i> Suggest with AI
+            </button>
+          </div>
+          <textarea id="edit_description" name="description" class="form-control"
+                    placeholder="Enter task description" rows="4" maxlength="2000"></textarea>
+          <div class="d-flex justify-content-between">
+            <div class="invalid-feedback" id="edit_desc_error"></div>
+            <div class="char-counter"><span id="edit_desc_count">0</span>/2000</div>
+          </div>
+        </div>
+
+        <!-- Priority + Due Date -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+          <div class="form-group mb-0">
+            <label class="form-label" for="edit_priority">Priority <span class="required">*</span></label>
+            <select id="edit_priority" name="priority" class="form-select">
+              <option value="low">🟢 Low</option>
+              <option value="medium">🟡 Medium</option>
+              <option value="high">🔴 High</option>
+            </select>
+          </div>
+          <div class="form-group mb-0">
+            <label class="form-label" for="edit_due_date">Due Date</label>
+            <input type="date" id="edit_due_date" name="due_date" class="form-control">
+          </div>
+        </div>
+
+        <div class="form-check mt-3">
+          <input type="checkbox" class="form-check-input" id="edit_completed" name="completed">
+          <label class="form-check-label" for="edit_completed" style="font-size:13.5px;">
+            Mark as completed
+          </label>
+        </div>
+
+        <div id="editTaskError" class="mt-2" style="display:none;color:var(--danger);font-size:13px;"></div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn-secondary-custom" onclick="closeEditModal()">Cancel</button>
+        <button type="submit" class="btn-primary-custom" id="editSubmitBtn">
+          <i class="bi bi-check-lg"></i> Update Task
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+

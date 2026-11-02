@@ -1,0 +1,222 @@
+{% extends "base_app.html" %}
+{% load static %}
+
+{% block title %}All Tasks{% endblock %}
+{% block page_title %}All Tasks{% endblock %}
+{% block page_subtitle %}Manage, edit, and track all your tasks.{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/tasks.css' %}">
+{% endblock %}
+
+{% block content %}
+
+<!-- Header & Search & Add Task -->
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:14px;">
+  <div>
+    <h4 style="margin:0;font-size:18px;font-weight:700;color:var(--text-primary);">All Tasks</h4>
+    <p style="margin:2px 0 0;font-size:13px;color:var(--text-secondary);">Manage, edit, and track all your tasks.</p>
+  </div>
+
+  <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+    <!-- Search Form -->
+    <form method="get" style="display:flex;align-items:center;position:relative;">
+      <input type="hidden" name="status" value="{{ status_filter }}">
+      <input type="hidden" name="priority" value="{{ priority_filter }}">
+      <i class="bi bi-search" style="position:absolute;left:12px;color:var(--text-muted);font-size:13px;pointer-events:none;"></i>
+      <input type="text"
+             name="search"
+             class="form-control"
+             style="padding-left:34px;width:220px;border-radius:var(--radius-sm);height:38px;font-size:13px;"
+             placeholder="Search tasks..."
+             value="{{ search_query }}">
+    </form>
+
+    <button class="btn-primary-custom" onclick="openCreateModal()" style="height:38px;">
+      <i class="bi bi-plus-lg"></i> Add Task
+    </button>
+  </div>
+</div>
+
+<!-- Filters Row: Status Pills on left, Priority Dropdown on right -->
+<div class="card" style="margin-bottom:16px;">
+  <div class="card-body-custom" style="padding:12px 18px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+
+    <!-- Filter Pills -->
+    <div class="filter-pills-container">
+      <a href="?status=all{% if priority_filter != 'all' %}&priority={{ priority_filter }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}"
+         class="filter-badge-pill {% if status_filter == 'all' and not request.GET.overdue %}active{% endif %}">
+        All ({{ all_count }})
+      </a>
+      <a href="?status=pending{% if priority_filter != 'all' %}&priority={{ priority_filter }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}"
+         class="filter-badge-pill {% if status_filter == 'pending' %}active{% endif %}">
+        Pending ({{ pending_count }})
+      </a>
+      <a href="?status=completed{% if priority_filter != 'all' %}&priority={{ priority_filter }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}"
+         class="filter-badge-pill {% if status_filter == 'completed' %}active{% endif %}">
+        Completed ({{ completed_count }})
+      </a>
+      <a href="?status=all&overdue=1{% if priority_filter != 'all' %}&priority={{ priority_filter }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}"
+         class="filter-badge-pill {% if request.GET.overdue %}active{% endif %}">
+        Overdue ({{ overdue_count }})
+      </a>
+    </div>
+
+    <!-- Priority Filter -->
+    <div style="display:flex;align-items:center;gap:8px;">
+      <form method="get" id="priorityForm" style="display:flex;align-items:center;gap:6px;">
+        <input type="hidden" name="status" value="{{ status_filter }}">
+        {% if search_query %}<input type="hidden" name="search" value="{{ search_query }}">{% endif %}
+        <span style="font-size:13px;color:var(--text-secondary);font-weight:500;">Priority:</span>
+        <select name="priority"
+                class="form-select"
+                style="width:auto;height:34px;font-size:13px;padding:4px 28px 4px 10px;cursor:pointer;"
+                onchange="document.getElementById('priorityForm').submit()">
+          <option value="all" {% if priority_filter == 'all' %}selected{% endif %}>All</option>
+          <option value="high" {% if priority_filter == 'high' %}selected{% endif %}>High</option>
+          <option value="medium" {% if priority_filter == 'medium' %}selected{% endif %}>Medium</option>
+          <option value="low" {% if priority_filter == 'low' %}selected{% endif %}>Low</option>
+        </select>
+      </form>
+      {% if search_query or status_filter != 'all' or priority_filter != 'all' or request.GET.overdue %}
+      <a href="{% url 'tasks:task_list' %}" class="btn-secondary-custom" style="padding:4px 10px;height:34px;font-size:12px;">
+        Reset
+      </a>
+      {% endif %}
+    </div>
+
+  </div>
+</div>
+
+<!-- Task Table Card -->
+<div class="card">
+  <div class="card-body-custom p-0">
+    {% if page_obj %}
+    <div style="overflow-x:auto;">
+      <table class="task-table">
+        <thead>
+          <tr>
+            <th style="width:36px;text-align:center;">
+              <input type="checkbox" class="task-checkbox" style="cursor:pointer;" title="Select all">
+            </th>
+            <th style="width:50px;">No.</th>
+            <th>Title</th>
+            <th style="width:110px;">Priority</th>
+            <th style="width:120px;">Status</th>
+            <th style="width:120px;">Due Date</th>
+            <th style="width:90px;text-align:center;">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for task in page_obj %}
+          <tr id="task-row-{{ task.id }}">
+            <td style="text-align:center;">
+              <input type="checkbox"
+                     class="task-checkbox"
+                     {% if task.completed %}checked{% endif %}
+                     onchange="toggleTask({{ task.id }}, this)"
+                     title="{% if task.completed %}Mark as Pending{% else %}Mark as Completed{% endif %}">
+            </td>
+            <td data-label="No." style="color:var(--text-muted);font-size:12.5px;">
+              {{ forloop.counter|add:page_obj.start_index|add:"-1" }}
+            </td>
+            <td class="task-title-cell" data-label="Title" title="{{ task.title }}">
+              <span {% if task.completed %}style="text-decoration:line-through;color:var(--text-muted);"{% endif %}>
+                {{ task.title }}
+              </span>
+            </td>
+            <td data-label="Priority">
+              <span class="badge-priority badge-{{ task.priority }}">{{ task.get_priority_display }}</span>
+            </td>
+            <td data-label="Status">
+              <span class="badge-status {% if task.completed %}badge-completed{% else %}badge-pending{% endif %}">
+                {% if task.completed %}Completed{% else %}Pending{% endif %}
+              </span>
+            </td>
+            <td data-label="Due Date" style="font-size:12.5px;color:var(--text-secondary);">
+              {% if task.due_date %}
+                <span {% if task.is_overdue %}style="color:var(--danger);font-weight:600;"{% endif %}>
+                  {{ task.due_date|date:"M d" }}
+                </span>
+              {% else %}
+                <span style="color:var(--text-muted);">—</span>
+              {% endif %}
+            </td>
+            <td data-label="Actions" style="text-align:center;">
+              <div class="action-btns" style="justify-content:center;">
+                <button class="btn-icon" onclick="openEditModal({{ task.id }})" title="Edit task">
+                  <i class="bi bi-pencil"></i>
+                </button>
+                <button class="btn-icon btn-danger-icon" onclick="openDeleteModal({{ task.id }}, '{{ task.title|escapejs }}')" title="Delete task">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Table Footer / Pagination -->
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-top:1px solid var(--border);flex-wrap:wrap;gap:10px;">
+      <span style="font-size:13px;color:var(--text-secondary);">
+        Showing {{ page_obj.start_index }} to {{ page_obj.end_index }} of {{ page_obj.paginator.count }} tasks
+      </span>
+
+      {% if page_obj.has_other_pages %}
+      <div class="pagination-custom">
+        {% if page_obj.has_previous %}
+        <a href="?page={{ page_obj.previous_page_number }}&status={{ status_filter }}&priority={{ priority_filter }}&search={{ search_query }}"
+           class="page-btn" title="Previous">
+          <i class="bi bi-chevron-left"></i>
+        </a>
+        {% endif %}
+
+        {% for num in page_obj.paginator.page_range %}
+          {% if page_obj.number == num %}
+            <span class="page-btn active">{{ num }}</span>
+          {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+            <a href="?page={{ num }}&status={{ status_filter }}&priority={{ priority_filter }}&search={{ search_query }}"
+               class="page-btn">{{ num }}</a>
+          {% endif %}
+        {% endfor %}
+
+        {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}&status={{ status_filter }}&priority={{ priority_filter }}&search={{ search_query }}"
+           class="page-btn" title="Next">
+          <i class="bi bi-chevron-right"></i>
+        </a>
+        {% endif %}
+      </div>
+      {% endif %}
+    </div>
+
+    {% else %}
+    <div class="empty-state">
+      <div class="empty-state-icon"><i class="bi bi-clipboard-x"></i></div>
+      <h5>No tasks found</h5>
+      <p>
+        {% if search_query %}
+          No tasks match "{{ search_query }}". Try clearing the search or filters.
+        {% else %}
+          You don't have any tasks matching these filters.
+        {% endif %}
+      </p>
+      <button class="btn-primary-custom" onclick="openCreateModal()">
+        <i class="bi bi-plus-lg"></i> Create Task
+      </button>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+{% include "tasks/includes/create_task_modal.html" %}
+{% include "tasks/includes/edit_task_modal.html" %}
+{% include "tasks/includes/delete_task_modal.html" %}
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/tasks.js' %}"></script>
+{% endblock %}

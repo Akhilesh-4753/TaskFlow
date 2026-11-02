@@ -1,0 +1,45 @@
+<!-- Floating AI Assistant Button -->
+<button class="ai-fab" id="aiFab" title="TaskFlow AI Assistant" onclick="toggleAIChat()">
+  <i class="bi bi-stars"></i>
+</button>
+
+<!-- AI Chat Panel -->
+<div class="ai-chat-panel" id="aiChatPanel">
+  <div class="ai-chat-header">
+    <div class="ai-chat-header-info">
+      <div class="ai-avatar"><i class="bi bi-stars"></i></div>
+      <div>
+        <h6>TaskFlow AI</h6>
+        <div class="ai-status">
+          <span class="ai-status-dot"></span> Online
+        </div>
+      </div>
+    </div>
+    <button class="ai-close-btn" onclick="toggleAIChat()" title="Close">
+      <i class="bi bi-x"></i>
+    </button>
+  </div>
+
+  <div class="ai-chat-messages" id="aiMessages">
+    <div class="ai-msg assistant-msg">
+      <div class="ai-msg-avatar"><i class="bi bi-stars"></i></div>
+      <div class="ai-msg-bubble">
+        👋 Hi! I'm your TaskFlow AI assistant. I can help you organize tasks, set priorities, and boost productivity. What would you like to work on today?
+      </div>
+    </div>
+  </div>
+
+  <div class="ai-chat-input-area">
+    <textarea
+      class="ai-chat-input"
+      id="aiMessageInput"
+      placeholder="Ask me anything about your tasks..."
+      rows="1"
+      maxlength="2000"
+      onkeydown="handleAIChatKey(event)"></textarea>
+    <button class="ai-send-btn" id="aiSendBtn" onclick="sendAIMessage()" title="Send">
+      <i class="bi bi-send-fill"></i>
+    </button>
+  </div>
+</div>
+

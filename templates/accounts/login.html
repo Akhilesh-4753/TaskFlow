@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Sign In{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/auth.css' %}">
+{% endblock %}
+
+{% block body %}
+<div class="auth-page">
+  <div class="auth-container">
+
+    <!-- Left: Illustration -->
+    <div class="auth-illustration">
+      <div class="auth-brand">
+        <div class="auth-brand-icon"><i class="bi bi-check2-square" style="color:white;font-size:18px;"></i></div>
+        <div>
+          <div class="auth-brand-name">TaskFlow</div>
+          <div class="auth-brand-tagline">Plan · Track · Complete</div>
+        </div>
+      </div>
+      <div class="auth-illustration-content">
+        <h2>Stay Organized,<br>Stay Productive</h2>
+        <p>Manage your tasks, set priorities, and achieve your goals with ease.</p>
+        <ul class="auth-features">
+          <li>Create and manage tasks effortlessly</li>
+          <li>Track your progress in real-time</li>
+          <li>AI-powered productivity assistant</li>
+          <li>Stay productive anywhere</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Right: Form -->
+    <div class="auth-form-panel">
+      <div class="auth-form-header">
+        <h1>Welcome Back 👋</h1>
+        <p>Organize your tasks, track progress, and get more done with TaskFlow.</p>
+      </div>
+
+      <form method="post" novalidate>
+        {% csrf_token %}
+
+        <!-- Username -->
+        <div class="form-group">
+          <label class="form-label" for="{{ form.username.id_for_label }}">Email or Username</label>
+          <div class="input-icon-group">
+            <i class="bi bi-person input-icon"></i>
+            <input type="text"
+                   name="{{ form.username.html_name }}"
+                   id="{{ form.username.id_for_label }}"
+                   class="form-control with-icon {% if form.username.errors %}is-invalid{% endif %}"
+                   placeholder="Enter your email or username"
+                   value="{{ form.username.value|default:'' }}"
+                   autocomplete="username"
+                   autofocus>
+          </div>
+          {% if form.username.errors %}
+          <div class="invalid-feedback d-block">{{ form.username.errors|join:", " }}</div>
+          {% endif %}
+        </div>
+
+        <!-- Password -->
+        <div class="form-group">
+          <div class="d-flex justify-content-between align-items-center mb-1">
+            <label class="form-label mb-0" for="id_login_password">Password</label>
+            <a href="#" style="font-size:12.5px;color:var(--primary);font-weight:500;text-decoration:none;">Forgot password?</a>
+          </div>
+          <div class="input-icon-group">
+            <i class="bi bi-lock input-icon"></i>
+            <input type="password"
+                   name="{{ form.password.html_name }}"
+                   id="id_login_password"
+                   class="form-control with-icon {% if form.password.errors %}is-invalid{% endif %}"
+                   placeholder="Enter your password"
+                   autocomplete="current-password">
+            <button type="button" class="toggle-password-btn" data-target="id_login_password" title="Show/hide password">
+              <i class="bi bi-eye" id="eye_id_login_password"></i>
+            </button>
+          </div>
+          {% if form.password.errors %}
+          <div class="invalid-feedback d-block">{{ form.password.errors|join:", " }}</div>
+          {% endif %}
+        </div>
+
+        <!-- Non-field errors -->
+        {% if form.non_field_errors %}
+        <div class="alert" style="background:var(--danger-light);color:var(--danger);padding:10px 14px;border-radius:var(--radius-sm);font-size:13px;margin-bottom:12px;">
+          {{ form.non_field_errors|join:" " }}
+        </div>
+        {% endif %}
+
+        <!-- Remember Me -->
+        <div class="form-check mb-16" style="margin-bottom:16px;">
+          <input type="checkbox" class="form-check-input" name="remember_me" id="id_remember_me">
+          <label class="form-check-label" for="id_remember_me" style="font-size:13.5px;color:var(--text-secondary);">Remember me</label>
+        </div>
+
+        <button type="submit" class="auth-submit-btn">Sign In</button>
+      </form>
+
+      <div class="auth-switch-text">
+        Don't have an account? <a href="{% url 'accounts:signup' %}">Sign Up</a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  // Password toggle
+  document.querySelectorAll('.toggle-password-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const targetId = btn.dataset.target;
+      const input = document.getElementById(targetId);
+      const icon = document.getElementById('eye_' + targetId);
+      if (input.type === 'password') {
+        input.type = 'text';
+        icon.className = 'bi bi-eye-slash';
+      } else {
+        input.type = 'password';
+        icon.className = 'bi bi-eye';
+      }
+    });
+  });
+</script>
+{% endblock %}
+

@@ -1,0 +1,56 @@
+<aside class="sidebar" id="sidebar">
+  <!-- Brand -->
+  <div class="sidebar-brand">
+    <a href="{% url 'tasks:dashboard' %}" class="sidebar-logo">
+      <div class="sidebar-logo-icon">
+        <i class="bi bi-check2-square"></i>
+      </div>
+      <div>
+        <div class="sidebar-logo-text">TaskFlow</div>
+        <div class="sidebar-logo-tagline">Plan · Track · Complete</div>
+      </div>
+    </a>
+  </div>
+
+  <!-- Navigation -->
+  <nav class="sidebar-nav">
+    <div class="nav-label">Main Menu</div>
+    <ul class="nav-item list-unstyled mb-0">
+      <li class="nav-item">
+        <a href="{% url 'tasks:dashboard' %}"
+           class="nav-link {% if active_page == 'dashboard' %}active{% endif %}">
+          <i class="bi bi-speedometer2"></i> Dashboard
+        </a>
+      </li>
+      <li class="nav-item">
+        <a href="{% url 'tasks:task_list' %}"
+           class="nav-link {% if active_page == 'tasks' %}active{% endif %}">
+          <i class="bi bi-list-task"></i> All Tasks
+        </a>
+      </li>
+      <li class="nav-item">
+        <a href="{% url 'reports:report_dashboard' %}"
+           class="nav-link {% if active_page == 'reports' %}active{% endif %}">
+          <i class="bi bi-bar-chart-line"></i> Reports
+        </a>
+      </li>
+      <li class="nav-item">
+        <a href="{% url 'accounts:profile' %}"
+           class="nav-link {% if active_page == 'profile' %}active{% endif %}">
+          <i class="bi bi-person-circle"></i> Profile
+        </a>
+      </li>
+    </ul>
+  </nav>
+
+  <!-- Footer / Logout -->
+  <div class="sidebar-footer">
+    <form method="post" action="{% url 'accounts:logout' %}">
+      {% csrf_token %}
+      <button type="submit" class="logout-btn">
+        <i class="bi bi-box-arrow-left"></i> Logout
+      </button>
+    </form>
+  </div>
+</aside>
+

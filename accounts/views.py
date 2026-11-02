@@ -1,0 +1,101 @@
+from django.shortcuts import render, redirect
+from django.contrib.auth import login, logout, authenticate, update_session_auth_hash
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from django.contrib.auth.models import User
+from .forms import SignupForm, LoginForm, ProfileUpdateForm, PasswordChangeForm
+from .models import Profile
+
+
+def signup_view(request):
+    """Handle user registration."""
+    if request.user.is_authenticated:
+        return redirect('tasks:dashboard')
+
+    if request.method == 'POST':
+        form = SignupForm(request.POST)
+        if form.is_valid():
+            user = form.save()
+            # Create a profile for the new user
+            Profile.objects.get_or_create(user=user)
+            login(request, user)
+            messages.success(request, f'Welcome to TaskFlow, {user.first_name or user.username}! 🎉')
+            return redirect('tasks:dashboard')
+    else:
+        form = SignupForm()
+
+    return render(request, 'accounts/signup.html', {'form': form})
+
+
+def login_view(request):
+    """Handle user login."""
+    if request.user.is_authenticated:
+        return redirect('tasks:dashboard')
+
+    if request.method == 'POST':
+        form = LoginForm(request, data=request.POST)
+        if form.is_valid():
+            user = form.get_user()
+            remember_me = form.cleaned_data.get('remember_me', False)
+            login(request, user)
+            if not remember_me:
+                request.session.set_expiry(0)  # Session expires on browser close
+            # Create profile if missing (for existing users)
+            Profile.objects.get_or_create(user=user)
+            messages.success(request, f'Welcome back, {user.first_name or user.username}! 👋')
+            next_url = request.GET.get('next', 'tasks:dashboard')
+            return redirect(next_url)
+    else:
+        form = LoginForm(request)
+
+    return render(request, 'accounts/login.html', {'form': form})
+
+
+def logout_view(request):
+    """Handle user logout via POST."""
+    if request.method == 'POST':
+        logout(request)
+        messages.info(request, 'You have been logged out successfully.')
+    return redirect('accounts:login')
+
+
+@login_required
+def profile_view(request):
+    """Display and update user profile."""
+    user = request.user
+    profile, _ = Profile.objects.get_or_create(user=user)
+
+    profile_form = ProfileUpdateForm(instance=user)
+    password_form = PasswordChangeForm(user=user)
+
+    if request.method == 'POST':
+        action = request.POST.get('action')
+
+        if action == 'update_profile':
+            profile_form = ProfileUpdateForm(request.POST, instance=user)
+            if profile_form.is_valid():
+                profile_form.save()
+                messages.success(request, 'Profile updated successfully.')
+                return redirect('accounts:profile')
+            else:
+                messages.error(request, 'Please correct the errors below.')
+
+        elif action == 'change_password':
+            password_form = PasswordChangeForm(user=user, data=request.POST)
+            if password_form.is_valid():
+                new_password = password_form.cleaned_data['new_password1']
+                user.set_password(new_password)
+                user.save()
+                update_session_auth_hash(request, user)  # Keep user logged in
+                messages.success(request, 'Password changed successfully.')
+                return redirect('accounts:profile')
+            else:
+                messages.error(request, 'Please correct the errors below.')
+
+    context = {
+        'profile_form': profile_form,
+        'password_form': password_form,
+        'profile': profile,
+    }
+    return render(request, 'accounts/profile.html', context)
+

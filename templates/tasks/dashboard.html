@@ -1,0 +1,288 @@
+{% extends "base_app.html" %}
+{% load static %}
+
+{% block title %}Dashboard{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+{% block page_subtitle %}Here's your productivity overview.{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+{% endblock %}
+
+{% block content %}
+
+<!-- Summary Stat Cards -->
+<div class="stat-cards-row">
+  <div class="stat-card">
+    <div class="stat-card-icon total"><i class="bi bi-stack"></i></div>
+    <div class="stat-card-info">
+      <div class="stat-card-value">{{ stats.total }}</div>
+      <div class="stat-card-label">Total Tasks</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-card-icon complete"><i class="bi bi-check-circle"></i></div>
+    <div class="stat-card-info">
+      <div class="stat-card-value">{{ stats.completed }}</div>
+      <div class="stat-card-label">Completed</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-card-icon pending"><i class="bi bi-clock"></i></div>
+    <div class="stat-card-info">
+      <div class="stat-card-value">{{ stats.pending }}</div>
+      <div class="stat-card-label">Pending</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-card-icon danger"><i class="bi bi-exclamation-circle"></i></div>
+    <div class="stat-card-info">
+      <div class="stat-card-value">{{ stats.overdue }}</div>
+      <div class="stat-card-label">Overdue</div>
+    </div>
+  </div>
+</div>
+
+<!-- Middle Row: Charts -->
+<div class="dashboard-grid">
+
+  <!-- Task Overview Donut Chart -->
+  <div class="card">
+    <div class="card-header-custom">
+      <h5>Task Overview</h5>
+    </div>
+    <div class="card-body-custom">
+      {% if stats.total > 0 %}
+      <div style="display:flex;align-items:center;gap:24px;flex-wrap:wrap;">
+        <div style="position:relative;width:150px;height:150px;flex-shrink:0;margin:0 auto;">
+          <canvas id="taskDonut"></canvas>
+          <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+            <div style="font-size:22px;font-weight:700;color:var(--text-primary);line-height:1.1;">
+              {% if stats.total > 0 %}{% widthratio stats.completed stats.total 100 %}%{% else %}0%{% endif %}
+            </div>
+            <div style="font-size:11px;color:var(--text-secondary);font-weight:500;">Completed</div>
+          </div>
+        </div>
+        <div style="flex:1;min-width:180px;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+            <span style="width:10px;height:10px;border-radius:50%;background:#16A34A;flex-shrink:0;"></span>
+            <span style="font-size:13px;color:var(--text-secondary);">Completed</span>
+            <span style="font-weight:600;margin-left:auto;font-size:13px;">{{ stats.completed }} ({% if stats.total > 0 %}{% widthratio stats.completed stats.total 100 %}{% else %}0{% endif %}%)</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+            <span style="width:10px;height:10px;border-radius:50%;background:#D97706;flex-shrink:0;"></span>
+            <span style="font-size:13px;color:var(--text-secondary);">Pending</span>
+            <span style="font-weight:600;margin-left:auto;font-size:13px;">{{ stats.pending }} ({% if stats.total > 0 %}{% widthratio stats.pending stats.total 100 %}{% else %}0{% endif %}%)</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="width:10px;height:10px;border-radius:50%;background:#DC2626;flex-shrink:0;"></span>
+            <span style="font-size:13px;color:var(--text-secondary);">Overdue</span>
+            <span style="font-weight:600;margin-left:auto;font-size:13px;">{{ stats.overdue }} ({% if stats.total > 0 %}{% widthratio stats.overdue stats.total 100 %}{% else %}0{% endif %}%)</span>
+          </div>
+        </div>
+      </div>
+      {% else %}
+      <div class="empty-state" style="padding:28px 16px;">
+        <div class="empty-state-icon" style="font-size:36px;"><i class="bi bi-pie-chart"></i></div>
+        <p style="margin:0;font-size:13px;">No tasks yet. Create a task to see statistics.</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- This Week Activity Chart -->
+  <div class="card">
+    <div class="card-header-custom">
+      <h5>This Week</h5>
+      <span style="font-size:12px;color:var(--text-secondary);background:var(--bg);border:1px solid var(--border);padding:3px 10px;border-radius:var(--radius-sm);cursor:pointer;">
+        This Week ▾
+      </span>
+    </div>
+    <div class="card-body-custom" style="height:190px;">
+      <canvas id="weekChart"></canvas>
+    </div>
+  </div>
+
+</div>
+
+<!-- Bottom Row: Recent Tasks + AI Task Suggestion -->
+<div class="dashboard-bottom-grid">
+
+  <!-- Recent Tasks Card -->
+  <div class="card">
+    <div class="card-header-custom">
+      <h5>Recent Tasks</h5>
+      <a href="{% url 'tasks:task_list' %}" style="font-size:12.5px;color:var(--primary);text-decoration:none;font-weight:600;display:flex;align-items:center;gap:4px;">
+        View All <i class="bi bi-arrow-right"></i>
+      </a>
+    </div>
+    <div class="card-body-custom p-0">
+      {% if recent_tasks %}
+      <table class="task-table">
+        <tbody>
+          {% for task in recent_tasks %}
+          <tr id="task-row-{{ task.id }}">
+            <td style="width:36px;padding-right:0;">
+              <input type="checkbox"
+                     class="task-checkbox"
+                     {% if task.completed %}checked{% endif %}
+                     onchange="toggleTask({{ task.id }}, this)"
+                     title="{% if task.completed %}Mark as Pending{% else %}Mark as Completed{% endif %}">
+            </td>
+            <td class="task-title-cell" title="{{ task.title }}">
+              <span {% if task.completed %}style="text-decoration:line-through;color:var(--text-muted);"{% endif %}>
+                {{ task.title }}
+              </span>
+            </td>
+            <td style="width:90px;">
+              <span class="badge-priority badge-{{ task.priority }}">{{ task.get_priority_display }}</span>
+            </td>
+            <td style="width:100px;font-size:12.5px;color:var(--text-secondary);white-space:nowrap;">
+              {% if task.due_date %}
+                {{ task.due_date|date:"M d" }}
+              {% else %}
+                {{ task.created_at|date:"M d" }}
+              {% endif %}
+            </td>
+            <td style="width:70px;text-align:right;">
+              <div class="action-btns" style="justify-content:flex-end;">
+                <button class="btn-icon" onclick="openEditModal({{ task.id }})" title="Edit">
+                  <i class="bi bi-pencil"></i>
+                </button>
+                <button class="btn-icon btn-danger-icon" onclick="openDeleteModal({{ task.id }}, '{{ task.title|escapejs }}')" title="Delete">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <div class="empty-state" style="padding:32px 16px;">
+        <div class="empty-state-icon" style="font-size:36px;"><i class="bi bi-check2-circle"></i></div>
+        <h5>All caught up!</h5>
+        <p>No recent tasks found.</p>
+        <button class="btn-primary-custom" onclick="openCreateModal()">
+          <i class="bi bi-plus-lg"></i> Create Task
+        </button>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- AI Task Suggestion Card -->
+  <div class="card">
+    <div class="card-header-custom">
+      <h5 style="display:flex;align-items:center;gap:6px;">
+        <i class="bi bi-robot" style="color:var(--ai-accent);"></i> AI Task Suggestion ✨
+      </h5>
+    </div>
+    <div class="card-body-custom" style="display:flex;flex-direction:column;align-items:center;text-align:center;padding:28px 20px;">
+      <div style="width:56px;height:56px;border-radius:18px;background:var(--ai-light);color:var(--ai-accent);display:flex;align-items:center;justify-content:center;font-size:26px;margin-bottom:14px;">
+        <i class="bi bi-robot"></i>
+      </div>
+      <p style="font-size:13.5px;color:var(--text-secondary);line-height:1.5;margin-bottom:18px;">
+        Get smart task ideas and better descriptions with AI.
+      </p>
+      <button class="btn-primary-custom" onclick="toggleAIChat()" style="background:var(--ai-accent);width:100%;justify-content:center;border-radius:var(--radius-sm);padding:10px;">
+        <i class="bi bi-stars"></i> Generate with AI
+      </button>
+    </div>
+  </div>
+
+</div>
+
+{% include "tasks/includes/create_task_modal.html" %}
+{% include "tasks/includes/edit_task_modal.html" %}
+{% include "tasks/includes/delete_task_modal.html" %}
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+  // 1. Donut Chart
+  {% if stats.total > 0 %}
+  const donutCanvas = document.getElementById('taskDonut');
+  if (donutCanvas) {
+    new Chart(donutCanvas, {
+      type: 'doughnut',
+      data: {
+        labels: ['Completed', 'Pending', 'Overdue'],
+        datasets: [{
+          data: [{{ stats.completed }}, {{ stats.pending }}, {{ stats.overdue }}],
+          backgroundColor: ['#16A34A', '#D97706', '#DC2626'],
+          borderWidth: 0,
+          hoverOffset: 3,
+        }]
+      },
+      options: {
+        cutout: '72%',
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: (ctx) => ` ${ctx.label}: ${ctx.parsed} tasks`
+            }
+          }
+        },
+        responsive: true,
+        maintainAspectRatio: false,
+      }
+    });
+  }
+  {% endif %}
+
+  // 2. Line Chart: This Week
+  const weekCanvas = document.getElementById('weekChart');
+  if (weekCanvas) {
+    const weekLabels = {{ week_labels_json|safe }};
+    const weekCounts = {{ week_counts_json|safe }};
+
+    new Chart(weekCanvas, {
+      type: 'line',
+      data: {
+        labels: weekLabels,
+        datasets: [{
+          label: 'Tasks',
+          data: weekCounts,
+          borderColor: '#4F46E5',
+          backgroundColor: 'rgba(79, 70, 229, 0.08)',
+          borderWidth: 2.5,
+          tension: 0.35,
+          fill: true,
+          pointBackgroundColor: '#4F46E5',
+          pointBorderColor: '#FFFFFF',
+          pointBorderWidth: 2,
+          pointRadius: 4,
+          pointHoverRadius: 6,
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: (ctx) => ` ${ctx.parsed.y} tasks`
+            }
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: { stepSize: 5 },
+            grid: { color: '#F1F5F9' }
+          },
+          x: {
+            grid: { display: false }
+          }
+        }
+      }
+    });
+  }
+</script>
+<script src="{% static 'js/tasks.js' %}"></script>
+{% endblock %}

@@ -1,0 +1,80 @@
+<!-- Create Task Modal -->
+<div class="modal-overlay" id="createTaskModal" role="dialog" aria-modal="true" aria-labelledby="createModalTitle">
+  <div class="modal-box" role="document">
+    <div class="modal-header">
+      <h4 id="createModalTitle"><i class="bi bi-plus-circle" style="color:var(--primary);margin-right:6px;"></i>Create Task</h4>
+      <button class="modal-close-btn" onclick="closeCreateModal()" title="Close" aria-label="Close modal">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+
+    <form id="createTaskForm" novalidate>
+      {% csrf_token %}
+      <div class="modal-body">
+
+        <!-- Title -->
+        <div class="form-group">
+          <label class="form-label" for="create_title">Title <span class="required">*</span></label>
+          <input type="text" id="create_title" name="title" class="form-control"
+                 placeholder="Enter task title" maxlength="200" required>
+          <div class="d-flex justify-content-between">
+            <div class="invalid-feedback" id="create_title_error"></div>
+            <div class="char-counter"><span id="create_title_count">0</span>/200</div>
+          </div>
+        </div>
+
+        <!-- Description -->
+        <div class="form-group">
+          <div class="d-flex justify-content-between align-items-center mb-1">
+            <label class="form-label mb-0" for="create_description">Description <span class="required">*</span></label>
+            <button type="button" class="btn-ai-suggest" id="aiSuggestBtn" onclick="suggestDescription()">
+              <i class="bi bi-stars"></i> Suggest with AI
+            </button>
+          </div>
+          <textarea id="create_description" name="description" class="form-control"
+                    placeholder="Enter task description" rows="4" maxlength="2000"></textarea>
+          <div class="d-flex justify-content-between">
+            <div class="invalid-feedback" id="create_desc_error"></div>
+            <div class="char-counter"><span id="create_desc_count">0</span>/2000</div>
+          </div>
+        </div>
+
+        <!-- Priority + Due Date Row -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+          <div class="form-group mb-0">
+            <label class="form-label" for="create_priority">Priority <span class="required">*</span></label>
+            <select id="create_priority" name="priority" class="form-select">
+              <option value="low">🟢 Low</option>
+              <option value="medium" selected>🟡 Medium</option>
+              <option value="high">🔴 High</option>
+            </select>
+          </div>
+          <div class="form-group mb-0">
+            <label class="form-label" for="create_due_date">Due Date</label>
+            <input type="date" id="create_due_date" name="due_date" class="form-control">
+          </div>
+        </div>
+
+        <!-- Mark as completed -->
+        <div class="form-check mt-3">
+          <input type="checkbox" class="form-check-input" id="create_completed" name="completed">
+          <label class="form-check-label" for="create_completed" style="font-size:13.5px;">
+            Mark as completed
+          </label>
+        </div>
+
+        <!-- Error message area -->
+        <div id="createTaskError" class="mt-2" style="display:none;color:var(--danger);font-size:13px;"></div>
+
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn-secondary-custom" onclick="closeCreateModal()">Cancel</button>
+        <button type="submit" class="btn-primary-custom" id="createSubmitBtn">
+          <i class="bi bi-plus-lg"></i> Save Task
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+

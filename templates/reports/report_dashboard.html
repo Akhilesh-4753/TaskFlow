@@ -1,0 +1,186 @@
+{% extends "base_app.html" %}
+{% load static %}
+
+{% block title %}Reports{% endblock %}
+{% block page_title %}Reports{% endblock %}
+{% block page_subtitle %}Track your productivity and task progress.{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/reports.css' %}">
+{% endblock %}
+
+{% block content %}
+
+<!-- Stat Cards -->
+<div class="stat-cards-row">
+  <div class="stat-card">
+    <div class="stat-card-icon total"><i class="bi bi-stack"></i></div>
+    <div class="stat-card-info">
+      <div class="stat-card-value">{{ total }}</div>
+      <div class="stat-card-label">Total Tasks</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-card-icon complete"><i class="bi bi-check-circle"></i></div>
+    <div class="stat-card-info">
+      <div class="stat-card-value">{{ completed }}</div>
+      <div class="stat-card-label">Completed</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-card-icon pending"><i class="bi bi-clock-history"></i></div>
+    <div class="stat-card-info">
+      <div class="stat-card-value">{{ completion_rate }}%</div>
+      <div class="stat-card-label">Completion Rate</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-card-icon danger"><i class="bi bi-exclamation-circle"></i></div>
+    <div class="stat-card-info">
+      <div class="stat-card-value">{{ overdue_count }}</div>
+      <div class="stat-card-label">Overdue</div>
+    </div>
+  </div>
+</div>
+
+{% if total > 0 %}
+<!-- Charts Row -->
+<div class="reports-charts-grid">
+
+  <!-- Task Status Distribution (Donut) -->
+  <div class="card">
+    <div class="card-header-custom">
+      <h5><i class="bi bi-pie-chart-fill" style="color:var(--primary);margin-right:6px;"></i>Task Status Distribution</h5>
+    </div>
+    <div class="card-body-custom" style="display:flex;flex-direction:column;align-items:center;padding:20px;">
+      <div style="position:relative;width:180px;height:180px;">
+        <canvas id="statusDonut"></canvas>
+        <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+          <div style="font-size:28px;font-weight:700;">{{ total }}</div>
+          <div style="font-size:11px;color:var(--text-secondary);">Tasks</div>
+        </div>
+      </div>
+      <div style="margin-top:16px;display:flex;flex-direction:column;gap:8px;width:100%;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="width:10px;height:10px;border-radius:50%;background:#16A34A;flex-shrink:0;"></span>
+          <span style="font-size:13px;color:var(--text-secondary);">Completed</span>
+          <span style="font-weight:600;margin-left:auto;font-size:13px;">{{ completed }} ({{ completion_rate }}%)</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="width:10px;height:10px;border-radius:50%;background:#D97706;flex-shrink:0;"></span>
+          <span style="font-size:13px;color:var(--text-secondary);">Pending</span>
+          <span style="font-weight:600;margin-left:auto;font-size:13px;">{{ pending }}</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="width:10px;height:10px;border-radius:50%;background:#DC2626;flex-shrink:0;"></span>
+          <span style="font-size:13px;color:var(--text-secondary);">Overdue</span>
+          <span style="font-weight:600;margin-left:auto;font-size:13px;">{{ overdue_count }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tasks by Priority (Bar) -->
+  <div class="card">
+    <div class="card-header-custom">
+      <h5><i class="bi bi-bar-chart-fill" style="color:var(--warning);margin-right:6px;"></i>Tasks by Priority</h5>
+    </div>
+    <div class="card-body-custom">
+      <canvas id="priorityBar" height="180"></canvas>
+    </div>
+  </div>
+
+  <!-- This Week (Line) -->
+  <div class="card" style="grid-column: span 2;">
+    <div class="card-header-custom">
+      <h5><i class="bi bi-graph-up" style="color:var(--success);margin-right:6px;"></i>Tasks Created — Last 7 Days</h5>
+    </div>
+    <div class="card-body-custom">
+      <canvas id="weekLine" height="100"></canvas>
+    </div>
+  </div>
+
+</div>
+{% endif %}
+
+<!-- Recent / Pending / High Priority -->
+<div class="reports-lists-grid">
+
+  <!-- Recently Completed -->
+  <div class="card">
+    <div class="card-header-custom">
+      <h5><i class="bi bi-check2-all" style="color:var(--success);margin-right:6px;"></i>Recently Completed</h5>
+    </div>
+    <div class="card-body-custom p-0">
+      {% if recently_completed %}
+      <ul style="list-style:none;padding:0;margin:0;">
+        {% for task in recently_completed %}
+        <li style="display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid var(--border);">
+          <i class="bi bi-check-circle-fill" style="color:var(--success);font-size:15px;flex-shrink:0;"></i>
+          <span style="flex:1;font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ task.title }}</span>
+          <span class="badge-priority badge-{{ task.priority }}" style="flex-shrink:0;">{{ task.get_priority_display }}</span>
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <div class="empty-state" style="padding:24px;">
+        <p style="margin:0;font-size:13px;">No completed tasks yet.</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- High Priority Pending -->
+  <div class="card">
+    <div class="card-header-custom">
+      <h5><i class="bi bi-exclamation-circle-fill" style="color:var(--danger);margin-right:6px;"></i>High Priority Pending</h5>
+    </div>
+    <div class="card-body-custom p-0">
+      {% if high_priority_tasks %}
+      <ul style="list-style:none;padding:0;margin:0;">
+        {% for task in high_priority_tasks %}
+        <li style="display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid var(--border);">
+          <i class="bi bi-flag-fill" style="color:var(--danger);font-size:14px;flex-shrink:0;"></i>
+          <span style="flex:1;font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ task.title }}</span>
+          <span style="font-size:12px;color:var(--text-muted);">
+            {% if task.due_date %}{{ task.due_date }}{% endif %}
+          </span>
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <div class="empty-state" style="padding:24px;">
+        <p style="margin:0;font-size:13px;">No high priority tasks. 🎉</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+</div>
+
+{% if total == 0 %}
+<div class="card" style="margin-top:24px;">
+  <div class="empty-state">
+    <div class="empty-state-icon"><i class="bi bi-bar-chart"></i></div>
+    <h5>No data to report yet</h5>
+    <p>Create tasks and complete them to see your productivity reports here.</p>
+    <a href="{% url 'tasks:dashboard' %}" class="btn-primary-custom">
+      <i class="bi bi-plus-lg"></i> Go to Dashboard
+    </a>
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+const statusData = {{ status_data_json|safe }};
+const priorityData = {{ priority_data_json|safe }};
+const weekLabels = {{ week_labels_json|safe }};
+const weekCounts = {{ week_counts_json|safe }};
+</script>
+<script src="{% static 'js/reports.js' %}"></script>
+{% endblock %}
+
