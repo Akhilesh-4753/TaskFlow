@@ -5,39 +5,39 @@
       <div class="sidebar-logo-icon">
         <i class="bi bi-check2-square"></i>
       </div>
-      <div>
-        <div class="sidebar-logo-text">TaskFlow</div>
-        <div class="sidebar-logo-tagline">Plan · Track · Complete</div>
-      </div>
+      <span class="sidebar-logo-text">TaskFlow</span>
     </a>
   </div>
 
-  <!-- Navigation -->
+  <!-- Navigation Menu -->
   <nav class="sidebar-nav">
-    <div class="nav-label">Main Menu</div>
-    <ul class="nav-item list-unstyled mb-0">
-      <li class="nav-item">
+    <ul class="sidebar-menu">
+      <li class="sidebar-menu-item">
         <a href="{% url 'tasks:dashboard' %}"
-           class="nav-link {% if active_page == 'dashboard' %}active{% endif %}">
-          <i class="bi bi-speedometer2"></i> Dashboard
+           class="sidebar-nav-link {% if active_page == 'dashboard' %}active{% endif %}">
+          <i class="bi bi-columns-gap sidebar-nav-icon"></i>
+          <span class="sidebar-nav-text">Dashboard</span>
         </a>
       </li>
-      <li class="nav-item">
+      <li class="sidebar-menu-item">
         <a href="{% url 'tasks:task_list' %}"
-           class="nav-link {% if active_page == 'tasks' %}active{% endif %}">
-          <i class="bi bi-list-task"></i> All Tasks
+           class="sidebar-nav-link {% if active_page == 'tasks' %}active{% endif %}">
+          <i class="bi bi-card-checklist sidebar-nav-icon"></i>
+          <span class="sidebar-nav-text">All Tasks</span>
         </a>
       </li>
-      <li class="nav-item">
+      <li class="sidebar-menu-item">
         <a href="{% url 'reports:report_dashboard' %}"
-           class="nav-link {% if active_page == 'reports' %}active{% endif %}">
-          <i class="bi bi-bar-chart-line"></i> Reports
+           class="sidebar-nav-link {% if active_page == 'reports' %}active{% endif %}">
+          <i class="bi bi-bar-chart-line sidebar-nav-icon"></i>
+          <span class="sidebar-nav-text">Reports</span>
         </a>
       </li>
-      <li class="nav-item">
+      <li class="sidebar-menu-item">
         <a href="{% url 'accounts:profile' %}"
-           class="nav-link {% if active_page == 'profile' %}active{% endif %}">
-          <i class="bi bi-person-circle"></i> Profile
+           class="sidebar-nav-link {% if active_page == 'profile' %}active{% endif %}">
+          <i class="bi bi-person sidebar-nav-icon"></i>
+          <span class="sidebar-nav-text">Profile</span>
         </a>
       </li>
     </ul>
@@ -45,12 +45,12 @@
 
   <!-- Footer / Logout -->
   <div class="sidebar-footer">
-    <form method="post" action="{% url 'accounts:logout' %}">
+    <form method="post" action="{% url 'accounts:logout' %}" style="margin:0;padding:0;width:100%;">
       {% csrf_token %}
-      <button type="submit" class="logout-btn">
-        <i class="bi bi-box-arrow-left"></i> Logout
+      <button type="submit" class="sidebar-logout-btn">
+        <i class="bi bi-box-arrow-left sidebar-nav-icon"></i>
+        <span class="sidebar-nav-text">Logout</span>
       </button>
     </form>
   </div>
 </aside>
-

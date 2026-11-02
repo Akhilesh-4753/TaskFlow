@@ -10,5 +10,6 @@ urlpatterns = [
     path('<int:pk>/edit/', views.task_edit_view, name='task_edit'),
     path('<int:pk>/delete/', views.task_delete_view, name='task_delete'),
     path('<int:pk>/toggle/', views.task_toggle_view, name='task_toggle'),
+    path('bulk-toggle/', views.task_bulk_toggle_view, name='task_bulk_toggle'),
 ]
 

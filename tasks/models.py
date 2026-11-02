@@ -64,3 +64,9 @@ class Task(models.Model):
             return self.due_date < timezone.now().date()
         return False
 
+    def is_due_today(self):
+        """Check if the task is due today."""
+        if self.due_date:
+            return self.due_date == timezone.now().date()
+        return False
+

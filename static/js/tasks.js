@@ -4,6 +4,19 @@
 
 let deleteTaskId = null;
 
+// Multi-fallback CSRF token retriever
+function getCsrfToken() {
+  const meta = document.querySelector('meta[name="csrf-token"]');
+  if (meta && meta.content && meta.content.length > 10) return meta.content;
+  const input = document.querySelector('[name=csrfmiddlewaretoken]');
+  if (input && input.value && input.value.length > 10) return input.value;
+  if (typeof getCookie === 'function') {
+    const c = getCookie('csrftoken');
+    if (c) return c;
+  }
+  return '';
+}
+
 // Character counter listeners
 document.addEventListener('DOMContentLoaded', () => {
   const createTitle = document.getElementById('create_title');
@@ -72,6 +85,9 @@ document.addEventListener('DOMContentLoaded', () => {
   if (editForm) {
     editForm.addEventListener('submit', handleEditTaskSubmit);
   }
+
+  // Initialize Select-All checkbox state on page load
+  updateSelectAllCheckboxState();
 });
 
 // Modal Open / Close functions
@@ -207,29 +223,115 @@ function confirmDelete() {
   });
 }
 
-// Toggle Task Completion via AJAX
-function toggleTask(taskId, btnElement) {
+// =====================================================
+// Task UI Helpers & State Updates
+// =====================================================
+function updateTaskRowUI(taskId, isCompleted) {
+  const row = document.getElementById(`task-row-${taskId}`);
+  if (!row) return;
+
+  // Update row checkbox
+  const cb = row.querySelector('.row-task-checkbox') || row.querySelector('.task-checkbox');
+  if (cb) {
+    cb.checked = isCompleted;
+    cb.title = isCompleted ? 'Mark as Pending' : 'Mark as Completed';
+  }
+
+  // Update title strikethrough
+  const titleSpan = row.querySelector('.task-title-cell span');
+  if (titleSpan) {
+    if (isCompleted) {
+      titleSpan.style.textDecoration = 'line-through';
+      titleSpan.style.color = 'var(--text-muted)';
+    } else {
+      titleSpan.style.textDecoration = 'none';
+      titleSpan.style.color = '';
+    }
+  }
+
+  // Update status badge
+  const badge = document.getElementById(`task-status-badge-${taskId}`) || row.querySelector('.badge-status');
+  if (badge) {
+    if (isCompleted) {
+      badge.className = 'badge-status badge-completed';
+      badge.textContent = 'Completed';
+      badge.title = 'Click to toggle status: Completed';
+    } else {
+      badge.className = 'badge-status badge-pending';
+      badge.textContent = 'Pending';
+      badge.title = 'Click to toggle status: Pending';
+    }
+  }
+}
+
+function updateSelectAllCheckboxState() {
+  const master = document.getElementById('selectAllTasks');
+  const rowCheckboxes = document.querySelectorAll('.task-table tbody .row-task-checkbox');
+  if (!master || rowCheckboxes.length === 0) return;
+
+  const total = rowCheckboxes.length;
+  const checkedCount = Array.from(rowCheckboxes).filter(cb => cb.checked).length;
+
+  master.checked = checkedCount === total && total > 0;
+  master.indeterminate = checkedCount > 0 && checkedCount < total;
+}
+
+// Toggle single task completion status immediately in UI and Database
+function toggleTask(taskId, element) {
   if (!taskId) return;
 
+  const row = document.getElementById(`task-row-${taskId}`);
+  const cb = row ? (row.querySelector('.row-task-checkbox') || row.querySelector('.task-checkbox')) : null;
+
+  // Determine target completed state
+  let isCompleted;
+  if (element && element.type === 'checkbox') {
+    isCompleted = element.checked;
+  } else if (cb) {
+    isCompleted = !cb.checked;
+  } else {
+    isCompleted = true;
+  }
+
+  // Immediate UI update for instant feedback
+  updateTaskRowUI(taskId, isCompleted);
+  updateSelectAllCheckboxState();
+
+  // Send AJAX request to update status in the database
+  const csrf = getCsrfToken();
   fetch(`/tasks/${taskId}/toggle/`, {
     method: 'POST',
     headers: {
-      'X-CSRFToken': getCookie('csrftoken'),
+      'X-CSRFToken': csrf,
       'X-Requested-With': 'XMLHttpRequest',
       'Content-Type': 'application/json'
-    }
+    },
+    body: JSON.stringify({ completed: isCompleted })
   })
-  .then(res => res.json())
+  .then(res => {
+    if (!res.ok) {
+      throw new Error(`Server returned HTTP ${res.status}`);
+    }
+    return res.json();
+  })
   .then(data => {
     if (data.success) {
-      window.location.reload();
+      // Sync with returned state from database
+      updateTaskRowUI(taskId, data.completed);
+      updateSelectAllCheckboxState();
+      console.log(`[TaskFlow DB] Task ${taskId} status updated in DB: completed=${data.completed}`);
     } else {
-      alert(data.message || 'Failed to toggle status.');
+      // Revert if database update failed
+      updateTaskRowUI(taskId, !isCompleted);
+      updateSelectAllCheckboxState();
+      alert(data.message || 'Failed to update task status in database.');
     }
   })
   .catch(err => {
-    console.error('Toggle error:', err);
-    alert('An error occurred while updating task status.');
+    console.error('Toggle DB error:', err);
+    updateTaskRowUI(taskId, !isCompleted);
+    updateSelectAllCheckboxState();
+    alert(`Error updating task status in database: ${err.message}`);
   });
 }
 
@@ -420,4 +522,69 @@ function suggestDescriptionForEdit() {
     alert('AI suggestion service is currently unavailable.');
   });
 }
+
+// =====================================================
+// Table Checkbox Select-All Functionality
+// =====================================================
+function toggleSelectAll(master) {
+  if (!master) {
+    master = document.getElementById('selectAllTasks');
+  }
+  if (!master) return;
+
+  const isCompleted = master.checked;
+  const rowCheckboxes = document.querySelectorAll('.task-table tbody .row-task-checkbox');
+  if (rowCheckboxes.length === 0) return;
+
+  const taskIds = [];
+  rowCheckboxes.forEach(cb => {
+    cb.checked = isCompleted;
+    const taskId = cb.getAttribute('data-task-id') || cb.value;
+    if (taskId) {
+      taskIds.push(parseInt(taskId, 10));
+      updateTaskRowUI(taskId, isCompleted);
+    }
+  });
+
+  master.indeterminate = false;
+
+  // Send bulk status update to the database via AJAX
+  const csrf = getCsrfToken();
+  fetch('/tasks/bulk-toggle/', {
+    method: 'POST',
+    headers: {
+      'X-CSRFToken': csrf,
+      'X-Requested-With': 'XMLHttpRequest',
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      task_ids: taskIds,
+      completed: isCompleted
+    })
+  })
+  .then(res => {
+    if (!res.ok) {
+      throw new Error(`Server returned HTTP ${res.status}`);
+    }
+    return res.json();
+  })
+  .then(data => {
+    if (data.success) {
+      console.log(`[TaskFlow DB] ${data.updated_count} tasks updated in DB: status=${data.status_text}`);
+    } else {
+      alert(data.message || 'Failed to update some tasks in database.');
+      updateSelectAllCheckboxState();
+    }
+  })
+  .catch(err => {
+    console.error('Bulk toggle DB error:', err);
+    alert(`Error updating tasks in database: ${err.message}`);
+    updateSelectAllCheckboxState();
+  });
+}
+
+function handleRowCheckboxChange() {
+  updateSelectAllCheckboxState();
+}
+
 

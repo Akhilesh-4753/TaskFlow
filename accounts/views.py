@@ -3,7 +3,7 @@ from django.contrib.auth import login, logout, authenticate, update_session_auth
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.contrib.auth.models import User
-from .forms import SignupForm, LoginForm, ProfileUpdateForm, PasswordChangeForm
+from .forms import SignupForm, LoginForm, ProfileUpdateForm, PasswordChangeForm, ProfileAvatarForm
 from .models import Profile
 
 
@@ -21,6 +21,8 @@ def signup_view(request):
             login(request, user)
             messages.success(request, f'Welcome to TaskFlow, {user.first_name or user.username}! 🎉')
             return redirect('tasks:dashboard')
+        else:
+            messages.error(request, 'Please fix the errors below to create your account.')
     else:
         form = SignupForm()
 
@@ -43,8 +45,12 @@ def login_view(request):
             # Create profile if missing (for existing users)
             Profile.objects.get_or_create(user=user)
             messages.success(request, f'Welcome back, {user.first_name or user.username}! 👋')
-            next_url = request.GET.get('next', 'tasks:dashboard')
+            next_url = request.POST.get('next') or request.GET.get('next') or 'tasks:dashboard'
+            if not next_url or str(next_url).strip() == '':
+                next_url = 'tasks:dashboard'
             return redirect(next_url)
+        else:
+            messages.error(request, 'Please check your login credentials and try again.')
     else:
         form = LoginForm(request)
 
@@ -52,20 +58,20 @@ def login_view(request):
 
 
 def logout_view(request):
-    """Handle user logout via POST."""
-    if request.method == 'POST':
-        logout(request)
-        messages.info(request, 'You have been logged out successfully.')
+    """Handle user logout."""
+    logout(request)
+    messages.info(request, 'You have been logged out successfully.')
     return redirect('accounts:login')
 
 
 @login_required
 def profile_view(request):
-    """Display and update user profile."""
+    """Display and update user profile, avatar, and password."""
     user = request.user
     profile, _ = Profile.objects.get_or_create(user=user)
 
     profile_form = ProfileUpdateForm(instance=user)
+    avatar_form = ProfileAvatarForm(instance=profile)
     password_form = PasswordChangeForm(user=user)
 
     if request.method == 'POST':
@@ -73,12 +79,30 @@ def profile_view(request):
 
         if action == 'update_profile':
             profile_form = ProfileUpdateForm(request.POST, instance=user)
-            if profile_form.is_valid():
+            avatar_form = ProfileAvatarForm(request.POST, request.FILES, instance=profile)
+
+            # Handle optional avatar removal
+            if request.POST.get('remove_avatar') == '1' and profile.avatar:
+                profile.avatar.delete(save=False)
+                profile.avatar = None
+                profile.save()
+
+            if profile_form.is_valid() and avatar_form.is_valid():
                 profile_form.save()
+                if 'avatar' in request.FILES:
+                    avatar_form.save()
                 messages.success(request, 'Profile updated successfully.')
                 return redirect('accounts:profile')
             else:
                 messages.error(request, 'Please correct the errors below.')
+
+        elif action == 'remove_avatar':
+            if profile.avatar:
+                profile.avatar.delete(save=False)
+                profile.avatar = None
+                profile.save()
+                messages.success(request, 'Profile picture removed successfully.')
+            return redirect('accounts:profile')
 
         elif action == 'change_password':
             password_form = PasswordChangeForm(user=user, data=request.POST)
@@ -94,6 +118,7 @@ def profile_view(request):
 
     context = {
         'profile_form': profile_form,
+        'avatar_form': avatar_form,
         'password_form': password_form,
         'profile': profile,
     }

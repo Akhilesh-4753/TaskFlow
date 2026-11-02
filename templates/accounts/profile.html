@@ -12,14 +12,15 @@
   <!-- Profile Header Card -->
   <div class="card" style="margin-bottom:20px;padding:28px;">
     <div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap;">
-      <div class="user-avatar" style="width:72px;height:72px;font-size:24px;flex-shrink:0;">
-        {% with request.user.get_full_name as name %}
-          {% if name %}
-            {{ name|slice:":1"|upper }}{% if name|length > 1 %}{{ name|slice:"-1:"|upper }}{% endif %}
-          {% else %}
-            {{ request.user.username|slice:":2"|upper }}
-          {% endif %}
-        {% endwith %}
+      <div style="position:relative;width:72px;height:72px;flex-shrink:0;">
+        {% if profile.avatar %}
+          <img src="{{ profile.avatar.url }}" alt="{{ request.user.username }}"
+               style="width:72px;height:72px;border-radius:50%;object-fit:cover;border:2.5px solid var(--primary-light);">
+        {% else %}
+          <div class="user-avatar" style="width:72px;height:72px;font-size:24px;flex-shrink:0;">
+            {{ profile.get_initials }}
+          </div>
+        {% endif %}
       </div>
       <div>
         <h3 style="margin:0;font-size:20px;font-weight:700;">{{ request.user.get_full_name|default:request.user.username }}</h3>
@@ -37,9 +38,61 @@
       <h5><i class="bi bi-person-gear" style="color:var(--primary);margin-right:6px;"></i>Edit Profile</h5>
     </div>
     <div class="card-body-custom">
-      <form method="post">
+      <form method="post" enctype="multipart/form-data">
         {% csrf_token %}
         <input type="hidden" name="action" value="update_profile">
+
+        <!-- Profile Picture Upload Section -->
+        <div class="form-group" style="margin-bottom:24px;">
+          <label class="form-label" style="font-weight:600;">Profile Picture</label>
+          <div style="display:flex;align-items:center;gap:18px;flex-wrap:wrap;">
+            <div style="position:relative;width:80px;height:80px;flex-shrink:0;">
+              {% if profile.avatar %}
+                <img src="{{ profile.avatar.url }}" id="avatarPreviewImg" alt="Profile Picture"
+                     style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:2px solid var(--border);">
+                <div id="avatarInitialsFallback" class="user-avatar" style="display:none;width:80px;height:80px;font-size:26px;">
+                  {{ profile.get_initials }}
+                </div>
+              {% else %}
+                <img src="" id="avatarPreviewImg" alt="Profile Picture"
+                     style="display:none;width:80px;height:80px;border-radius:50%;object-fit:cover;border:2px solid var(--border);">
+                <div id="avatarInitialsFallback" class="user-avatar" style="width:80px;height:80px;font-size:26px;">
+                  {{ profile.get_initials }}
+                </div>
+              {% endif %}
+            </div>
+
+            <div style="flex:1;min-width:220px;">
+              <input type="file" id="avatarFileInput" name="avatar"
+                     accept="image/jpeg,image/png,image/webp,image/gif"
+                     style="display:none;" onchange="previewAvatar(this)">
+              <input type="hidden" name="remove_avatar" id="removeAvatarFlag" value="0">
+
+              <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px;">
+                <button type="button" class="btn-secondary-custom" onclick="document.getElementById('avatarFileInput').click()">
+                  <i class="bi bi-camera"></i> Choose Photo
+                </button>
+                {% if profile.avatar %}
+                <button type="button" class="btn-secondary-custom" id="removePhotoBtn"
+                        onclick="markRemoveAvatar()"
+                        style="color:var(--danger);border-color:#FCA5A5;">
+                  <i class="bi bi-trash"></i> Remove
+                </button>
+                {% endif %}
+              </div>
+              <div id="avatarFileName" style="font-size:12px;color:var(--primary);font-weight:500;display:none;margin-bottom:4px;"></div>
+              <div style="font-size:12px;color:var(--text-muted);">
+                Allowed formats: JPG, PNG, WEBP, GIF. Maximum file size: 5MB.
+              </div>
+              {% if avatar_form.avatar.errors %}
+              <div class="invalid-feedback d-block mt-1">
+                {{ avatar_form.avatar.errors|join:", " }}
+              </div>
+              {% endif %}
+              <div id="avatarClientError" class="invalid-feedback d-block mt-1" style="display:none;"></div>
+            </div>
+          </div>
+        </div>
 
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
           <div class="form-group">
@@ -125,5 +178,88 @@
   </div>
 
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function previewAvatar(input) {
+  const errorBox = document.getElementById('avatarClientError');
+  const fileNameDisplay = document.getElementById('avatarFileName');
+  const previewImg = document.getElementById('avatarPreviewImg');
+  const initialsFallback = document.getElementById('avatarInitialsFallback');
+  const removeFlag = document.getElementById('removeAvatarFlag');
+
+  if (errorBox) {
+    errorBox.style.display = 'none';
+    errorBox.textContent = '';
+  }
+
+  if (input.files && input.files[0]) {
+    const file = input.files[0];
+
+    // Validate size (5MB max)
+    const maxSize = 5 * 1024 * 1024;
+    if (file.size > maxSize) {
+      if (errorBox) {
+        errorBox.textContent = `File is too large (${(file.size / (1024 * 1024)).toFixed(1)} MB). Maximum allowed size is 5 MB.`;
+        errorBox.style.display = 'block';
+      }
+      input.value = '';
+      return;
+    }
+
+    // Validate type
+    const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+    if (!validTypes.includes(file.type)) {
+      if (errorBox) {
+        errorBox.textContent = 'Please choose a valid image file (JPG, PNG, WEBP, or GIF).';
+        errorBox.style.display = 'block';
+      }
+      input.value = '';
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      if (previewImg) {
+        previewImg.src = e.target.result;
+        previewImg.style.display = 'block';
+      }
+      if (initialsFallback) {
+        initialsFallback.style.display = 'none';
+      }
+      if (fileNameDisplay) {
+        fileNameDisplay.textContent = `Selected: ${file.name} (${(file.size / 1024).toFixed(0)} KB)`;
+        fileNameDisplay.style.display = 'block';
+        fileNameDisplay.style.color = 'var(--primary)';
+      }
+      if (removeFlag) {
+        removeFlag.value = '0';
+      }
+    };
+    reader.readAsDataURL(file);
+  }
+}
+
+function markRemoveAvatar() {
+  const removeFlag = document.getElementById('removeAvatarFlag');
+  const previewImg = document.getElementById('avatarPreviewImg');
+  const initialsFallback = document.getElementById('avatarInitialsFallback');
+  const fileInput = document.getElementById('avatarFileInput');
+  const fileNameDisplay = document.getElementById('avatarFileName');
+  const removeBtn = document.getElementById('removePhotoBtn');
+
+  if (removeFlag) removeFlag.value = '1';
+  if (fileInput) fileInput.value = '';
+  if (previewImg) previewImg.style.display = 'none';
+  if (initialsFallback) initialsFallback.style.display = 'flex';
+  if (fileNameDisplay) {
+    fileNameDisplay.textContent = 'Photo marked for removal. Click "Save Changes" to apply.';
+    fileNameDisplay.style.display = 'block';
+    fileNameDisplay.style.color = 'var(--danger)';
+  }
+  if (removeBtn) removeBtn.style.display = 'none';
+}
+</script>
 {% endblock %}
 

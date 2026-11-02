@@ -27,9 +27,10 @@ class SignupForm(UserCreationForm):
     )
     username = forms.CharField(
         max_length=150,
+        required=False,
         widget=forms.TextInput(attrs={
             'class': 'form-control',
-            'placeholder': 'Choose a username',
+            'placeholder': 'Choose a username (optional)',
             'autocomplete': 'username',
         }),
         label='Username'
@@ -56,19 +57,38 @@ class SignupForm(UserCreationForm):
         }),
     )
     agree_terms = forms.BooleanField(
-        required=True,
+        required=False,
         label='I agree to the Terms of Service and Privacy Policy',
         widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}),
-        error_messages={'required': 'You must agree to the terms and privacy policy.'}
     )
 
     class Meta:
         model = User
         fields = ('first_name', 'username', 'email', 'password1', 'password2', 'agree_terms')
 
+    def clean_username(self):
+        username = self.cleaned_data.get('username', '').strip()
+        if not username:
+            email = self.cleaned_data.get('email') or self.data.get('email', '')
+            email = email.strip().lower()
+            if email:
+                import re
+                base = email.split('@')[0][:30]
+                base = re.sub(r'[^\w.@+-]', '_', base)
+                candidate = base
+                counter = 1
+                while User.objects.filter(username__iexact=candidate).exists():
+                    candidate = f"{base}_{counter}"
+                    counter += 1
+                username = candidate
+        else:
+            if User.objects.filter(username__iexact=username).exists():
+                raise forms.ValidationError('A user with this username already exists.')
+        return username
+
     def clean_email(self):
-        email = self.cleaned_data.get('email', '').lower()
-        if User.objects.filter(email=email).exists():
+        email = self.cleaned_data.get('email', '').strip().lower()
+        if User.objects.filter(email__iexact=email).exists():
             raise forms.ValidationError('A user with this email already exists.')
         return email
 
@@ -86,7 +106,7 @@ class SignupForm(UserCreationForm):
 
 
 class LoginForm(AuthenticationForm):
-    """Custom login form with Bootstrap styling."""
+    """Custom login form with Bootstrap styling supporting both username and email (case-insensitive)."""
     username = forms.CharField(
         widget=forms.TextInput(attrs={
             'class': 'form-control',
@@ -109,6 +129,43 @@ class LoginForm(AuthenticationForm):
         label='Remember me',
         widget=forms.CheckboxInput(attrs={'class': 'form-check-input'})
     )
+
+    def clean(self):
+        username_or_email = self.cleaned_data.get('username', '').strip()
+        password = self.cleaned_data.get('password')
+
+        if username_or_email and password:
+            from django.db.models import Q
+            from django.contrib.auth import authenticate
+            user_obj = User.objects.filter(
+                Q(username__iexact=username_or_email) | Q(email__iexact=username_or_email)
+            ).first()
+
+            if user_obj:
+                self.user_cache = authenticate(
+                    self.request,
+                    username=user_obj.username,
+                    password=password
+                )
+                if self.user_cache is None and password != password.strip():
+                    self.user_cache = authenticate(
+                        self.request,
+                        username=user_obj.username,
+                        password=password.strip()
+                    )
+            else:
+                self.user_cache = authenticate(
+                    self.request,
+                    username=username_or_email,
+                    password=password
+                )
+
+            if self.user_cache is None:
+                raise self.get_invalid_login_error()
+            else:
+                self.confirm_login_allowed(self.user_cache)
+
+        return self.cleaned_data
 
 
 class ProfileUpdateForm(forms.ModelForm):
@@ -136,6 +193,55 @@ class ProfileUpdateForm(forms.ModelForm):
         if qs.exists():
             raise forms.ValidationError('This email is already in use.')
         return email
+
+
+class ProfileAvatarForm(forms.ModelForm):
+    """Form for updating profile image with size, extension, and content validation."""
+    avatar = forms.ImageField(
+        required=False,
+        widget=forms.FileInput(attrs={
+            'class': 'form-control',
+            'id': 'avatarFileInput',
+            'accept': 'image/jpeg,image/png,image/webp,image/gif'
+        })
+    )
+
+    class Meta:
+        from .models import Profile
+        model = Profile
+        fields = ('avatar',)
+
+    def clean_avatar(self):
+        avatar = self.cleaned_data.get('avatar')
+        if not avatar:
+            return avatar
+
+        # File size validation (Max 5MB)
+        max_size_mb = 5
+        if avatar.size > max_size_mb * 1024 * 1024:
+            raise forms.ValidationError(
+                f'Image file size must not exceed {max_size_mb} MB. (Uploaded: {avatar.size / (1024 * 1024):.1f} MB)'
+            )
+
+        # File extension validation
+        import os
+        ext = os.path.splitext(avatar.name)[1].lower()
+        allowed_extensions = ['.jpg', '.jpeg', '.png', '.webp', '.gif']
+        if ext not in allowed_extensions:
+            raise forms.ValidationError(
+                'Unsupported image format. Allowed formats: JPG, PNG, WEBP, GIF.'
+            )
+
+        # Verify image using Pillow
+        from PIL import Image
+        try:
+            img = Image.open(avatar)
+            img.verify()
+        except Exception:
+            raise forms.ValidationError('The uploaded file is not a valid or readable image.')
+
+        return avatar
+
 
 
 class PasswordChangeForm(forms.Form):

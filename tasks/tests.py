@@ -62,6 +62,47 @@ class TaskTests(TestCase):
         self.task1.refresh_from_db()
         self.assertTrue(self.task1.completed)
 
+        # Toggle with AJAX and explicit payload
+        response_ajax = self.client.post(
+            reverse('tasks:task_toggle', args=[self.task1.id]),
+            {'completed': False},
+            content_type='application/json',
+            headers={'X-Requested-With': 'XMLHttpRequest'}
+        )
+        self.assertEqual(response_ajax.status_code, 200)
+        self.task1.refresh_from_db()
+        self.assertFalse(self.task1.completed)
+
+    def test_bulk_toggle_task(self):
+        self.client.login(username='user1', password='Password123!')
+        task2 = Task.objects.create(user=self.user1, title='Task 2', completed=False)
+
+        # Bulk mark completed
+        response = self.client.post(
+            reverse('tasks:task_bulk_toggle'),
+            {'task_ids': [self.task1.id, task2.id], 'completed': True},
+            content_type='application/json',
+            headers={'X-Requested-With': 'XMLHttpRequest'}
+        )
+        self.assertEqual(response.status_code, 200)
+        self.task1.refresh_from_db()
+        task2.refresh_from_db()
+        self.assertTrue(self.task1.completed)
+        self.assertTrue(task2.completed)
+
+        # Bulk mark pending
+        response_pending = self.client.post(
+            reverse('tasks:task_bulk_toggle'),
+            {'task_ids': [self.task1.id, task2.id], 'completed': False},
+            content_type='application/json',
+            headers={'X-Requested-With': 'XMLHttpRequest'}
+        )
+        self.assertEqual(response_pending.status_code, 200)
+        self.task1.refresh_from_db()
+        task2.refresh_from_db()
+        self.assertFalse(self.task1.completed)
+        self.assertFalse(task2.completed)
+
     def test_delete_task(self):
         self.client.login(username='user1', password='Password123!')
         response = self.client.post(reverse('tasks:task_delete', args=[self.task1.id]))
@@ -92,6 +133,10 @@ class TaskTests(TestCase):
         self.client.login(username='user1', password='Password123!')
         Task.objects.create(user=self.user1, title='Clean desk', priority='low', completed=True)
 
+        # Default task list GET (no query params)
+        res_default = self.client.get(reverse('tasks:task_list'))
+        self.assertEqual(res_default.status_code, 200)
+
         # Search
         res = self.client.get(reverse('tasks:task_list') + '?search=desk')
         self.assertContains(res, 'Clean desk')
@@ -101,6 +146,28 @@ class TaskTests(TestCase):
         res_completed = self.client.get(reverse('tasks:task_list') + '?status=completed')
         self.assertContains(res_completed, 'Clean desk')
         self.assertNotContains(res_completed, 'User 1 Task')
+
+        # Filter by priority
+        res_priority_all = self.client.get(reverse('tasks:task_list') + '?priority=all')
+        self.assertEqual(res_priority_all.status_code, 200)
+
+        res_priority_high = self.client.get(reverse('tasks:task_list') + '?priority=high')
+        self.assertEqual(res_priority_high.status_code, 200)
+        self.assertContains(res_priority_high, 'User 1 Task')
+        self.assertNotContains(res_priority_high, 'Clean desk')
+
+        # Filter by overdue
+        overdue_task = Task.objects.create(
+            user=self.user1,
+            title='Old Late Task',
+            priority='medium',
+            completed=False,
+            due_date=timezone.now().date() - timedelta(days=5)
+        )
+        res_overdue = self.client.get(reverse('tasks:task_list') + '?status=all&overdue=1')
+        self.assertEqual(res_overdue.status_code, 200)
+        self.assertContains(res_overdue, 'Old Late Task')
+        self.assertNotContains(res_overdue, 'User 1 Task')
 
     def test_overdue_property(self):
         past_task = Task.objects.create(

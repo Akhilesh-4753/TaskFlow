@@ -134,12 +134,19 @@
         <div class="invalid-feedback d-block mb-2" style="font-size:12px;">{{ form.agree_terms.errors|join:", " }}</div>
         {% endif %}
 
-        <!-- Non-field errors -->
+        <!-- Non-field errors and other field errors -->
         {% if form.non_field_errors %}
         <div class="alert" style="background:var(--danger-light);color:var(--danger);padding:10px 14px;border-radius:var(--radius-sm);font-size:13px;margin-bottom:12px;">
           {{ form.non_field_errors|join:" " }}
         </div>
         {% endif %}
+        {% for field in form %}
+          {% if field.name not in "first_name,email,password1,password2,agree_terms" and field.errors %}
+            <div class="alert" style="background:var(--danger-light);color:var(--danger);padding:10px 14px;border-radius:var(--radius-sm);font-size:13px;margin-bottom:12px;">
+              {{ field.label }}: {{ field.errors|join:", " }}
+            </div>
+          {% endif %}
+        {% endfor %}
 
         <button type="submit" class="auth-submit-btn">Create Account</button>
       </form>

@@ -42,3 +42,26 @@
   accent-color: var(--primary);
 }
 
+/* =====================================================
+   Task Grid Center Alignment (All Tasks)
+   ===================================================== */
+.task-table th,
+.task-table td {
+  text-align: center;
+  vertical-align: middle;
+}
+
+.task-table .task-title-cell {
+  text-align: center;
+}
+
+.task-table .action-btns {
+  justify-content: center;
+}
+
+.task-table tbody tr.row-selected {
+  background: #F1F5FD !important;
+}
+
+
+

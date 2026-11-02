@@ -1,12 +1,15 @@
 # Python
 __pycache__/
+**/__pycache__/
 *.py[cod]
 *$py.class
 *.so
 .Python
 venv/
+.venv/
 env/
 ENV/
+.pytest_cache/
 build/
 develop-eggs/
 dist/
@@ -23,12 +26,18 @@ wheels/
 .installed.cfg
 *.egg
 
+# Node
+**/node_modules/
+
 # Django
 *.log
 local_settings.py
 db.sqlite3
 db.sqlite3-journal
+*.sqlite3
+*.db
 media/
+staticfiles/
 
 # Environment variables
 .env

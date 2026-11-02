@@ -1,5 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from django.views.decorators.csrf import ensure_csrf_cookie
 from django.contrib import messages
 from django.http import JsonResponse
 from django.db.models import Q
@@ -27,6 +28,7 @@ def get_user_task_stats(user):
 
 
 @login_required
+@ensure_csrf_cookie
 def dashboard_view(request):
     """Main dashboard with summary stats and recent tasks."""
     stats = get_user_task_stats(request.user)
@@ -70,6 +72,7 @@ def dashboard_view(request):
 
 
 @login_required
+@ensure_csrf_cookie
 def task_list_view(request):
     """All tasks page with search, filter, and pagination."""
     tasks = Task.objects.filter(user=request.user)
@@ -81,9 +84,12 @@ def task_list_view(request):
             Q(title__icontains=search_query) | Q(description__icontains=search_query)
         )
 
-    # Filter by status
+    # Filter by status / overdue
     status_filter = request.GET.get('status', 'all')
-    if status_filter == 'completed':
+    is_overdue = request.GET.get('overdue') == '1'
+    if is_overdue:
+        tasks = tasks.filter(completed=False, due_date__lt=timezone.now().date())
+    elif status_filter == 'completed':
         tasks = tasks.filter(completed=True)
     elif status_filter == 'pending':
         tasks = tasks.filter(completed=False)
@@ -127,6 +133,7 @@ def task_list_view(request):
         'stats': stats,
         'search_query': search_query,
         'status_filter': status_filter,
+        'is_overdue': is_overdue,
         'priority_filter': priority_filter,
         'sort_by': sort_by,
         'active_page': 'tasks',
@@ -220,16 +227,35 @@ def task_delete_view(request, pk):
 
 @login_required
 def task_toggle_view(request, pk):
-    """Toggle task completion status (POST)."""
+    """Toggle or set task completion status (POST)."""
     task = get_object_or_404(Task, pk=pk, user=request.user)
 
     if request.method == 'POST':
-        task.completed = not task.completed
+        import json
+        desired_completed = None
+        if request.body:
+            try:
+                payload = json.loads(request.body)
+                if 'completed' in payload:
+                    desired_completed = bool(payload['completed'])
+            except Exception:
+                pass
+
+        if desired_completed is None and 'completed' in request.POST:
+            val = request.POST.get('completed')
+            desired_completed = str(val).lower() in ('true', '1')
+
+        if desired_completed is not None:
+            task.completed = desired_completed
+        else:
+            task.completed = not task.completed
+
         task.save()
         status_text = 'completed' if task.completed else 'pending'
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
             return JsonResponse({
                 'success': True,
+                'task_id': task.id,
                 'completed': task.completed,
                 'status_text': status_text,
                 'message': f'Task marked as {status_text}.',
@@ -238,4 +264,46 @@ def task_toggle_view(request, pk):
         return redirect(request.POST.get('next', 'tasks:task_list'))
 
     return JsonResponse({'success': False, 'message': 'Invalid request.'}, status=405)
+
+
+@login_required
+def task_bulk_toggle_view(request):
+    """Bulk update task completion status for user tasks (POST)."""
+    if request.method == 'POST':
+        import json
+        task_ids = []
+        completed = True
+        if request.body:
+            try:
+                payload = json.loads(request.body)
+                task_ids = payload.get('task_ids', [])
+                if 'completed' in payload:
+                    completed = bool(payload.get('completed'))
+            except Exception:
+                pass
+
+        if not task_ids and 'task_ids' in request.POST:
+            task_ids = request.POST.getlist('task_ids')
+            if 'completed' in request.POST:
+                completed = str(request.POST.get('completed')).lower() in ('true', '1')
+
+        if not isinstance(task_ids, list):
+            task_ids = [task_ids]
+
+        updated_count = Task.objects.filter(
+            user=request.user,
+            id__in=task_ids
+        ).update(completed=completed)
+
+        status_text = 'completed' if completed else 'pending'
+        return JsonResponse({
+            'success': True,
+            'updated_count': updated_count,
+            'completed': completed,
+            'status_text': status_text,
+            'message': f'{updated_count} tasks marked as {status_text}.',
+        })
+
+    return JsonResponse({'success': False, 'message': 'Invalid request.'}, status=405)
+
 

@@ -2,7 +2,7 @@
 <div class="modal-overlay" id="createTaskModal" role="dialog" aria-modal="true" aria-labelledby="createModalTitle">
   <div class="modal-box" role="document">
     <div class="modal-header">
-      <h4 id="createModalTitle"><i class="bi bi-plus-circle" style="color:var(--primary);margin-right:6px;"></i>Create Task</h4>
+      <h4 id="createModalTitle">Create Task</h4>
       <button class="modal-close-btn" onclick="closeCreateModal()" title="Close" aria-label="Close modal">
         <i class="bi bi-x-lg"></i>
       </button>
@@ -15,8 +15,8 @@
         <!-- Title -->
         <div class="form-group">
           <label class="form-label" for="create_title">Title <span class="required">*</span></label>
-          <input type="text" id="create_title" name="title" class="form-control"
-                 placeholder="Enter task title" maxlength="200" required>
+          <input type="text" id="create_title" name="title" class="form-control" placeholder="Enter task title"
+            maxlength="200" required>
           <div class="d-flex justify-content-between">
             <div class="invalid-feedback" id="create_title_error"></div>
             <div class="char-counter"><span id="create_title_count">0</span>/200</div>
@@ -31,8 +31,8 @@
               <i class="bi bi-stars"></i> Suggest with AI
             </button>
           </div>
-          <textarea id="create_description" name="description" class="form-control"
-                    placeholder="Enter task description" rows="4" maxlength="2000"></textarea>
+          <textarea id="create_description" name="description" class="form-control" placeholder="Enter task description"
+            rows="4" maxlength="2000"></textarea>
           <div class="d-flex justify-content-between">
             <div class="invalid-feedback" id="create_desc_error"></div>
             <div class="char-counter"><span id="create_desc_count">0</span>/2000</div>
@@ -44,9 +44,9 @@
           <div class="form-group mb-0">
             <label class="form-label" for="create_priority">Priority <span class="required">*</span></label>
             <select id="create_priority" name="priority" class="form-select">
-              <option value="low">🟢 Low</option>
-              <option value="medium" selected>🟡 Medium</option>
-              <option value="high">🔴 High</option>
+              <option value="low"> Low</option>
+              <option value="medium" selected> Medium</option>
+              <option value="high"> High</option>
             </select>
           </div>
           <div class="form-group mb-0">
@@ -77,4 +77,3 @@
     </form>
   </div>
 </div>
-
