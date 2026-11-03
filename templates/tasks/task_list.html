@@ -4,91 +4,175 @@
 {% block title %}All Tasks{% endblock %}
 {% block page_title %}All Tasks{% endblock %}
 {% block page_subtitle %}Manage, edit, and track all your tasks.{% endblock %}
+{% block body_class %}page-tasks{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/tasks.css' %}?v={% now 'U' %}">
+<style>
+  @media (min-width: 769px) {
+    html:has(body.page-tasks),
+    body.page-tasks {
+      overflow: hidden !important;
+      height: 100vh !important;
+    }
+    body.page-tasks .app-layout {
+      height: 100vh !important;
+      max-height: 100vh !important;
+      overflow: hidden !important;
+    }
+    body.page-tasks .main-content {
+      height: 100vh !important;
+      max-height: 100vh !important;
+      overflow: hidden !important;
+      display: flex !important;
+      flex-direction: column !important;
+    }
+    body.page-tasks .topbar {
+      flex-shrink: 0;
+    }
+    body.page-tasks .page-content {
+      flex: 1;
+      min-height: 0;
+      overflow: hidden !important;
+      display: flex;
+      flex-direction: column;
+      padding: 16px 28px;
+    }
+    .tasks-view-container {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .task-action-bar {
+      flex-shrink: 0;
+      margin-bottom: 12px !important;
+    }
+    .task-filters-card {
+      flex-shrink: 0;
+      margin-bottom: 12px !important;
+    }
+    .task-card-container {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .task-card-body {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .task-table-scroll-container {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto !important;
+      overflow-x: auto !important;
+      position: relative;
+    }
+    .task-table-footer {
+      flex-shrink: 0;
+    }
+  }
+  .task-table-scroll-container .task-table {
+    border-collapse: separate;
+    border-spacing: 0;
+  }
+  .task-table-scroll-container .task-table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: var(--bg) !important;
+    box-shadow: inset 0 -1px 0 var(--border);
+  }
+</style>
 {% endblock %}
 
 {% block content %}
 <span id="global-csrf" style="display:none;">{% csrf_token %}</span>
 
-<!-- Search & Add Task Action Bar -->
-<div style="display:flex;align-items:center;justify-content:flex-end;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
-  <!-- Search Form -->
-  <form method="get" style="display:flex;align-items:center;position:relative;">
-    <input type="hidden" name="status" value="{{ status_filter }}">
-    <input type="hidden" name="priority" value="{{ priority_filter }}">
-    {% if request.GET.overdue %}<input type="hidden" name="overdue" value="1">{% endif %}
-    <i class="bi bi-search"
-      style="position:absolute;left:12px;color:var(--text-muted);font-size:13px;pointer-events:none;"></i>
-    <input type="text" name="search" class="form-control"
-      style="padding-left:34px;width:220px;border-radius:var(--radius-sm);height:38px;font-size:13px;"
-      placeholder="Search tasks..." value="{{ search_query }}">
-  </form>
+<div class="tasks-view-container">
+  <!-- Search & Add Task Action Bar -->
+  <div class="task-action-bar" style="display:flex;align-items:center;justify-content:flex-end;margin-bottom:12px;flex-wrap:wrap;gap:12px;">
+    <!-- Search Form -->
+    <form method="get" style="display:flex;align-items:center;position:relative;">
+      <input type="hidden" name="status" value="{{ status_filter }}">
+      <input type="hidden" name="priority" value="{{ priority_filter }}">
+      {% if request.GET.overdue %}<input type="hidden" name="overdue" value="1">{% endif %}
+      <i class="bi bi-search"
+        style="position:absolute;left:12px;color:var(--text-muted);font-size:13px;pointer-events:none;"></i>
+      <input type="text" name="search" class="form-control"
+        style="padding-left:34px;width:220px;border-radius:var(--radius-sm);height:38px;font-size:13px;"
+        placeholder="Search tasks..." value="{{ search_query }}">
+    </form>
 
-  <button class="btn-primary-custom" onclick="openCreateModal()" style="height:38px;">
-    <i class="bi bi-plus-lg"></i> Add Task
-  </button>
-</div>
-
-<!-- Filters Row: Status Pills on left, Priority Dropdown on right -->
-<div class="card" style="margin-bottom:16px;">
-  <div class="card-body-custom"
-    style="padding:12px 18px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
-
-    <!-- Filter Pills -->
-    <div class="filter-pills-container">
-      <a href="?status=all{% if priority_filter != 'all' %}&priority={{ priority_filter }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}"
-        class="filter-badge-pill {% if status_filter == 'all' and not request.GET.overdue %}active{% endif %}">
-        All ({{ all_count }})
-      </a>
-      <a href="?status=pending{% if priority_filter != 'all' %}&priority={{ priority_filter }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}"
-        class="filter-badge-pill {% if status_filter == 'pending' %}active{% endif %}">
-        Pending ({{ pending_count }})
-      </a>
-      <a href="?status=completed{% if priority_filter != 'all' %}&priority={{ priority_filter }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}"
-        class="filter-badge-pill {% if status_filter == 'completed' %}active{% endif %}">
-        Completed ({{ completed_count }})
-      </a>
-      <a href="?status=all&overdue=1{% if priority_filter != 'all' %}&priority={{ priority_filter }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}"
-        class="filter-badge-pill {% if request.GET.overdue %}active{% endif %}">
-        Overdue ({{ overdue_count }})
-      </a>
-    </div>
-
-    <!-- Priority Filter -->
-    <div style="display:flex;align-items:center;gap:8px;">
-      <form method="get" id="priorityForm" style="display:flex;align-items:center;gap:6px;">
-        <input type="hidden" name="status" value="{{ status_filter }}">
-        {% if search_query %}<input type="hidden" name="search" value="{{ search_query }}">{% endif %}
-        {% if request.GET.overdue %}<input type="hidden" name="overdue" value="1">{% endif %}
-        <span style="font-size:13px;color:var(--text-secondary);font-weight:500;">Priority:</span>
-        <select name="priority" class="form-select"
-          style="width:auto;height:34px;font-size:13px;padding:4px 28px 4px 10px;cursor:pointer;"
-          onchange="document.getElementById('priorityForm').submit()">
-          <option value="all" {% if priority_filter == 'all' %}selected{% endif %}>All</option>
-          <option value="high" {% if priority_filter == 'high' %}selected{% endif %}>High</option>
-          <option value="medium" {% if priority_filter == 'medium' %}selected{% endif %}>Medium</option>
-          <option value="low" {% if priority_filter == 'low' %}selected{% endif %}>Low</option>
-        </select>
-      </form>
-      {% if search_query or status_filter != 'all' or priority_filter != 'all' or request.GET.overdue %}
-      <a href="{% url 'tasks:task_list' %}" class="btn-secondary-custom"
-        style="padding:4px 10px;height:34px;font-size:12px;">
-        Reset
-      </a>
-      {% endif %}
-    </div>
-
+    <button class="btn-primary-custom" onclick="openCreateModal()" style="height:38px;">
+      <i class="bi bi-plus-lg"></i> Add Task
+    </button>
   </div>
-</div>
 
-<!-- Task Table Card -->
-<div class="card">
-  <div class="card-body-custom p-0">
-    {% if page_obj %}
-    <div style="overflow-x:auto;">
-      <table class="task-table">
+  <!-- Filters Row: Status Pills on left, Priority Dropdown on right -->
+  <div class="card task-filters-card" style="margin-bottom:12px;">
+    <div class="card-body-custom"
+      style="padding:10px 18px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+
+      <!-- Filter Pills -->
+      <div class="filter-pills-container">
+        <a href="?status=all{% if priority_filter != 'all' %}&priority={{ priority_filter }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}"
+          class="filter-badge-pill {% if status_filter == 'all' and not request.GET.overdue %}active{% endif %}">
+          All ({{ all_count }})
+        </a>
+        <a href="?status=pending{% if priority_filter != 'all' %}&priority={{ priority_filter }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}"
+          class="filter-badge-pill {% if status_filter == 'pending' %}active{% endif %}">
+          Pending ({{ pending_count }})
+        </a>
+        <a href="?status=completed{% if priority_filter != 'all' %}&priority={{ priority_filter }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}"
+          class="filter-badge-pill {% if status_filter == 'completed' %}active{% endif %}">
+          Completed ({{ completed_count }})
+        </a>
+        <a href="?status=all&overdue=1{% if priority_filter != 'all' %}&priority={{ priority_filter }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}"
+          class="filter-badge-pill {% if request.GET.overdue %}active{% endif %}">
+          Overdue ({{ overdue_count }})
+        </a>
+      </div>
+
+      <!-- Priority Filter -->
+      <div style="display:flex;align-items:center;gap:8px;">
+        <form method="get" id="priorityForm" style="display:flex;align-items:center;gap:6px;">
+          <input type="hidden" name="status" value="{{ status_filter }}">
+          {% if search_query %}<input type="hidden" name="search" value="{{ search_query }}">{% endif %}
+          {% if request.GET.overdue %}<input type="hidden" name="overdue" value="1">{% endif %}
+          <span style="font-size:13px;color:var(--text-secondary);font-weight:500;">Priority:</span>
+          <select name="priority" class="form-select"
+            style="width:auto;height:34px;font-size:13px;padding:4px 28px 4px 10px;cursor:pointer;"
+            onchange="document.getElementById('priorityForm').submit()">
+            <option value="all" {% if priority_filter == 'all' %}selected{% endif %}>All</option>
+            <option value="high" {% if priority_filter == 'high' %}selected{% endif %}>High</option>
+            <option value="medium" {% if priority_filter == 'medium' %}selected{% endif %}>Medium</option>
+            <option value="low" {% if priority_filter == 'low' %}selected{% endif %}>Low</option>
+          </select>
+        </form>
+        {% if search_query or status_filter != 'all' or priority_filter != 'all' or request.GET.overdue %}
+        <a href="{% url 'tasks:task_list' %}" class="btn-secondary-custom"
+          style="padding:4px 10px;height:34px;font-size:12px;">
+          Reset
+        </a>
+        {% endif %}
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Task Table Card -->
+  <div class="card task-card-container">
+    <div class="card-body-custom p-0 task-card-body">
+      {% if page_obj %}
+      <div class="task-table-scroll-container">
+        <table class="task-table">
         <thead>
           <tr>
             <th style="width:36px;text-align:center;">
@@ -170,8 +254,8 @@
     </div>
 
     <!-- Table Footer / Pagination -->
-    <div
-      style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-top:1px solid var(--border);flex-wrap:wrap;gap:10px;">
+    <div class="task-table-footer"
+      style="display:flex;align-items:center;justify-content:space-between;padding:12px 20px;border-top:1px solid var(--border);flex-wrap:wrap;gap:10px;">
       <span style="font-size:13px;color:var(--text-secondary);">
         Showing {{ page_obj.start_index }} to {{ page_obj.end_index }} of {{ page_obj.paginator.count }} tasks
       </span>
@@ -221,6 +305,7 @@
     </div>
     {% endif %}
   </div>
+</div>
 </div>
 
 {% include "tasks/includes/create_task_modal.html" %}

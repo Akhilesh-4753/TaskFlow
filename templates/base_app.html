@@ -12,7 +12,7 @@
   <link rel="stylesheet" href="{% static 'css/main.css' %}">
   {% block extra_css %}{% endblock %}
 </head>
-<body>
+<body class="{% block body_class %}page-{{ active_page|default:'app' }}{% endblock %}">
 
 <div class="app-layout">
   <!-- Sidebar -->

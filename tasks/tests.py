@@ -217,5 +217,21 @@ class TaskTests(TestCase):
             self.assertContains(res, f"<h1>{expected_title}</h1>")
             self.assertContains(res, expected_subtitle)
 
+    def test_task_grid_scroll_container_and_no_main_scrollbar(self):
+        """Verify All Tasks page renders container classes for viewport-locked scrolling and sticky table headers."""
+        self.client.login(username='user1', password='Password123!')
+        res = self.client.get(reverse('tasks:task_list'))
+        self.assertEqual(res.status_code, 200)
+        self.assertContains(res, 'page-tasks')
+        self.assertContains(res, 'tasks-view-container')
+        self.assertContains(res, 'task-action-bar')
+        self.assertContains(res, 'task-filters-card')
+        self.assertContains(res, 'task-card-container')
+        self.assertContains(res, 'task-card-body')
+        self.assertContains(res, 'task-table-scroll-container')
+        self.assertContains(res, 'task-table-footer')
+        self.assertContains(res, 'position: sticky;')
+
+
 
 
