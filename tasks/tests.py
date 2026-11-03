@@ -548,6 +548,42 @@ class TaskTests(TestCase):
         self.assertEqual(filter_response.status_code, 200)
         self.assertContains(filter_response, 'Overdue Admin Test Task')
 
+        # Create tasks with edge case conditions (due today, completed, no due date)
+        Task.objects.create(
+            user=self.user1,
+            title='Due Today Admin Task',
+            priority='medium',
+            completed=False,
+            due_date=today
+        )
+        Task.objects.create(
+            user=self.user1,
+            title='Completed Admin Task',
+            priority='low',
+            completed=True,
+            due_date=today - timedelta(days=1)
+        )
+        Task.objects.create(
+            user=self.user1,
+            title='No Due Date Admin Task',
+            priority='low',
+            completed=False,
+            due_date=None
+        )
+
+        # Test Pending Tasks filter
+        pending_res = self.client.get(reverse('admin:tasks_task_changelist') + '?completed__exact=0')
+        self.assertEqual(pending_res.status_code, 200)
+        self.assertContains(pending_res, 'Due Today')
+        self.assertContains(pending_res, 'No due date')
+
+        # Test Completed Tasks filter
+        completed_res = self.client.get(reverse('admin:tasks_task_changelist') + '?completed__exact=1')
+        self.assertEqual(completed_res.status_code, 200)
+        self.assertContains(completed_res, 'Completed Admin Task')
+        self.assertContains(completed_res, 'Finished')
+
+
 
 
 

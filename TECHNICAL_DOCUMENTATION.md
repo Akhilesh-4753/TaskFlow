@@ -578,6 +578,9 @@ erDiagram
      - Overrides `admin.site.index` to inject platform metrics into `templates/admin/index.html`.
      - Displays 5 real-time KPI cards: Total Registered Users (active vs. inactive breakdown), Total Tasks, Pending Tasks, Completed Tasks, and Overdue Tasks.
      - Every metric card links directly to the corresponding filtered changelist view.
+   - **Changelist Formatting & HTML Escaping Compliance:**
+     - In accordance with Django's strict `format_html` argument contract (`TypeError: args or kwargs must be provided.`), all static HTML label badges (such as `'0 tasks'`, `'No due date'`, `'Finished'`, and `'Due Today'`) use `mark_safe` directly.
+     - Dynamic placeholders in `user_owner`, `priority_badge`, and `due_status_badge` strictly supply corresponding sanitized variables to `format_html`, ensuring full compatibility across all 5 filtered dashboard views.
    - **Custom Emerald Theme & Navigation:**
      - Custom branding, site header, and tab title configured via `admin.site.site_header`, `admin.site.site_title`, and `admin.site.index_title`.
      - Branded templates (`templates/admin/base_site.html`, `templates/admin/index.html`) and dedicated stylesheet (`static/css/admin_theme.css`) implementing TaskFlow's signature emerald palette (`#064E3B`, `#047857`, `#10B981`, `#34D399`).
@@ -769,6 +772,7 @@ python manage.py runserver
 | Avatar upload returns "Unsupported image format" | File extension or MIME type not in allowed list | Allowed formats: `.jpg`, `.jpeg`, `.png`, `.webp`, `.gif`. |
 | 403 Forbidden on AJAX modal POST | Missing or invalid CSRF token header | Verify that `getCsrfToken()` retrieves `csrftoken` from cookie or meta tag, and attaches `'X-CSRFToken'`. |
 | Background scheduler fires duplicate emails in dev | Auto-reloader spawned second worker | `tasks/email_scheduler.py` already includes `os.environ.get('RUN_MAIN') == 'true'` guard. Verify custom startup scripts preserve this check. |
+| `TypeError: args or kwargs must be provided.` in admin | Calling `format_html()` on static strings without placeholder arguments in custom `ModelAdmin` methods | In modern Django (5.0+ / 6.x), `format_html(format_string, *args, **kwargs)` strictly requires at least one positional or keyword argument. Use `mark_safe(...)` for static HTML badges with no format arguments. |
 
 ---
 

@@ -1,5 +1,6 @@
 from django.contrib import admin
 from django.utils.html import format_html
+from django.utils.safestring import mark_safe
 from django.urls import reverse
 from django.utils import timezone
 from .models import Task
@@ -97,7 +98,7 @@ class TaskAdmin(admin.ModelAdmin):
     @admin.display(description='Owner', ordering='user__username')
     def user_owner(self, obj):
         user_url = reverse('admin:auth_user_change', args=[obj.user.pk])
-        email_str = f" &lt;{obj.user.email}&gt;" if obj.user.email else ""
+        email_str = f" <{obj.user.email}>" if obj.user.email else ""
         return format_html(
             '<a href="{}" title="View user profile" style="font-weight:600;color:#065f46;text-decoration:none;">'
             '{}'
@@ -105,7 +106,7 @@ class TaskAdmin(admin.ModelAdmin):
             '<span style="color:#6b7280;font-size:11px;">{}</span>',
             user_url,
             obj.user.username,
-            format_html(email_str)
+            email_str
         )
 
     @admin.display(description='Priority', ordering='priority')
@@ -125,11 +126,11 @@ class TaskAdmin(admin.ModelAdmin):
     @admin.display(description='Status', ordering='completed')
     def status_badge(self, obj):
         if obj.completed:
-            return format_html(
+            return mark_safe(
                 '<span style="display:inline-block;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600;background:#d1fae5;color:#065f46;">'
                 '✓ Completed</span>'
             )
-        return format_html(
+        return mark_safe(
             '<span style="display:inline-block;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600;background:#fef3c7;color:#92400e;">'
             'Pending</span>'
         )
@@ -137,9 +138,9 @@ class TaskAdmin(admin.ModelAdmin):
     @admin.display(description='Due Status')
     def due_status_badge(self, obj):
         if not obj.due_date:
-            return format_html('<span style="color:#9ca3af;font-size:11px;">No due date</span>')
+            return mark_safe('<span style="color:#9ca3af;font-size:11px;">No due date</span>')
         if obj.completed:
-            return format_html('<span style="color:#059669;font-size:11px;">Finished</span>')
+            return mark_safe('<span style="color:#059669;font-size:11px;">Finished</span>')
 
         today = timezone.now().date()
         if obj.due_date < today:
@@ -150,7 +151,7 @@ class TaskAdmin(admin.ModelAdmin):
                 days
             )
         elif obj.due_date == today:
-            return format_html(
+            return mark_safe(
                 '<span style="display:inline-block;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600;background:#fef3c7;color:#92400e;">'
                 'Due Today</span>'
             )

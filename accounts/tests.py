@@ -272,6 +272,20 @@ class AccountsTests(TestCase):
         response = self.client.get(reverse('admin:index'))
         self.assertNotEqual(response.status_code, 200)
 
+    def test_user_admin_changelist_renders_without_format_html_errors(self):
+        """Verify UserAdmin changelist renders both 0-task and multi-task users cleanly."""
+        admin_user = User.objects.create_superuser(
+            username='superadmin2',
+            email='admin2@example.com',
+            password='AdminPassword123!'
+        )
+        self.client.login(username='superadmin2', password='AdminPassword123!')
+        response = self.client.get(reverse('admin:auth_user_changelist'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Task Statistics')
+        self.assertContains(response, '0 tasks')
+
+
 
 
 

@@ -2,6 +2,7 @@ from django.contrib import admin
 from django.contrib.auth.models import User
 from django.contrib.auth.admin import UserAdmin
 from django.utils.html import format_html
+from django.utils.safestring import mark_safe
 from django.urls import reverse
 from django.utils import timezone
 from .models import Profile
@@ -69,7 +70,7 @@ class CustomUserAdmin(UserAdmin):
     def task_stats_display(self, obj):
         total = obj.tasks.count()
         if total == 0:
-            return format_html('<span style="color:#9ca3af;font-size:12px;">0 tasks</span>')
+            return mark_safe('<span style="color:#9ca3af;font-size:12px;">0 tasks</span>')
 
         pending = obj.tasks.filter(completed=False).count()
         today = timezone.now().date()
@@ -97,9 +98,9 @@ class CustomUserAdmin(UserAdmin):
             task_list_url,
             obj.username,
             total,
-            pending_style,
+            mark_safe(pending_style),
             pending,
-            overdue_style,
+            mark_safe(overdue_style),
             overdue
         )
 
