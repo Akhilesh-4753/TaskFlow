@@ -1,0 +1,27 @@
+{% extends "admin/base.html" %}
+{% load static %}
+
+{% block title %}{% if subtitle %}{{ subtitle }} | {% endif %}{{ title }} | {{ site_title|default:"TaskFlow Admin" }}{% endblock %}
+
+{% block branding %}
+<div id="site-name">
+  <a href="{% url 'admin:index' %}" class="taskflow-admin-brand">
+    <span class="brand-badge">✓</span>
+    <span class="brand-text">TaskFlow <small>Admin Portal</small></span>
+  </a>
+</div>
+{% endblock %}
+
+{% block userlinks %}
+  <a href="{% url 'tasks:dashboard' %}" class="taskflow-return-link" target="_blank" title="Open TaskFlow Application Dashboard">
+    <span style="font-size: 13px;">↗</span> Return to TaskFlow
+  </a>
+  <span class="userlinks-separator">|</span>
+  {{ block.super }}
+{% endblock %}
+
+{% block extrastyle %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'css/admin_theme.css' %}">
+{% endblock %}
+

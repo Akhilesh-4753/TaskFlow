@@ -122,6 +122,10 @@ E:\BlackBox\TaskFlow\
 │   ├── base.html                     # Minimal base template for standalone pages (Auth)
 │   ├── base_app.html                 # Master dashboard layout (Sidebar, Topbar, Modals)
 │   │
+│   ├── admin/                        # Django Admin theme overrides & KPI dashboard
+│   │   ├── base_site.html            # Custom emerald branding, portal header & return link
+│   │   └── index.html                # Live Admin KPI analytics dashboard cards
+│   │
 │   ├── accounts/
 │   │   ├── login.html                # Split-view login page
 │   │   ├── profile.html              # User profile, avatar management, & password change
@@ -150,6 +154,7 @@ E:\BlackBox\TaskFlow\
 │
 ├── static/                           # Static assets (CSS, JavaScript, Images)
 │   ├── css/
+│   │   ├── admin_theme.css           # Styling for Django Admin portal & KPI dashboard
 │   │   ├── auth.css                  # Styling for login and signup views
 │   │   ├── dashboard.css             # Grid layouts, stat cards, & chart wrappers
 │   │   ├── main.css                  # Core design system tokens, variables, & utility classes
@@ -260,7 +265,18 @@ E:\BlackBox\TaskFlow\
   - `'profile/'` $\to$ `views.profile_view` (`name='profile'`)
 
 #### `accounts/admin.py`
-- **Responsibility:** Inlines `Profile` into the standard `UserAdmin` view using `admin.StackedInline`, allowing administrators to view and edit user avatars directly within the Django admin panel.
+- **Responsibility:** Central administrative configuration for user accounts, profiles, admin site branding, and platform dashboard analytics injection.
+- **Components:**
+  - `ProfileInline(admin.StackedInline)`: Embeds user avatar and bio directly within the User change view.
+  - `TaskInline(admin.TabularInline)`: Embeds all tasks owned by the selected user inside the User change view with direct change links and creation timestamps.
+  - `CustomUserAdmin(UserAdmin)`:
+    - `list_display`: Displays username, email, full name, active status, staff status, superuser status, live task statistics (`task_stats_display`), date joined, and last login.
+    - `list_editable`: Allows instant inline account activation/deactivation via `('is_active',)`.
+    - `actions`: `activate_users` and `deactivate_users` bulk operations (with self-deactivation protection for the active superuser).
+    - `task_stats_display`: Computes total tasks, pending tasks, and overdue tasks with formatted visual badges linking directly to filtered user tasks in `TaskAdmin`.
+  - `ProfileAdmin`: Manages standalone profiles with email display, avatar indicator, and registration timestamps.
+  - **Security Gate:** Custom `admin.site.has_permission` function restricting admin portal access exclusively to active Django superusers (`is_active and is_superuser`).
+  - **Analytics Dashboard:** Wraps `admin.site.index` to inject platform-wide metrics (`dashboard_stats`) containing total users, active users, inactive users, total tasks, pending tasks, completed tasks, overdue tasks, and tasks due today into the admin index template.
 
 ---
 
@@ -326,6 +342,19 @@ E:\BlackBox\TaskFlow\
 
 #### `tasks/management/commands/seed_demo_data.py`
 - **Responsibility:** Seeds demo user (`akhilesh`) with predefined pending, completed, overdue, and upcoming tasks matching design specifications.
+
+#### `tasks/admin.py`
+- **Responsibility:** Comprehensive administrative control panel for all user-created tasks.
+- **Components:**
+  - `DueStatusFilter(admin.SimpleListFilter)`: Custom sidebar filter classifying tasks into `Overdue`, `Due Today`, `Upcoming`, and `No Due Date`.
+  - `TaskAdmin(admin.ModelAdmin)`:
+    - `list_display`: Title, task owner with user change link and email (`user_owner`), colored priority dot badge (`priority_badge`), inline completion toggle (`completed`), due date, calculated overdue/upcoming badge (`due_status_badge`), and creation timestamp.
+    - `list_filter`: Completion status, priority, `DueStatusFilter`, due date, creation date, and owning user.
+    - `search_fields`: Search by task title, description, and owner attributes (`user__username`, `user__email`, `user__first_name`, `user__last_name`).
+    - `list_editable`: `('completed',)` allowing direct completion toggling from the changelist table.
+    - `actions`: `mark_as_completed` and `mark_as_pending` bulk status modifiers.
+    - `autocomplete_fields`: `['user']` with asynchronous user lookup.
+    - `fieldsets`: Organized sections for Task Details, Status & Scheduling, Notification Delivery Tracking (collapsed), and System Timestamps (collapsed).
 
 ---
 
@@ -532,6 +561,27 @@ erDiagram
    - If "Remember Me" is unchecked, `request.session.set_expiry(0)` enforces cookie expiration upon browser closure.
 3. **Password Security:**
    - Updating password calls `user.set_password()` followed by `update_session_auth_hash(request, user)` to update the session hash, avoiding unexpected logouts.
+4. **Admin Management System & Superuser Security Gate:**
+   - **Access Path:** Routed under `/admin/` via `config/urls.py`.
+   - **Strict Authorization:** Enforced through custom `admin.site.has_permission(request)`. Only users with both `is_active=True` and `is_superuser=True` are permitted. Regular users and non-superuser staff accounts are strictly prohibited from accessing administrative endpoints or data.
+   - **User Management Capabilities:**
+     - Registered user inspection with multi-field search (`username`, `first_name`, `last_name`, `email`) and filtering (`is_active`, `is_staff`, `is_superuser`, `date_joined`, `last_login`).
+     - Inline user profile (`ProfileInline`) and task inspection (`TaskInline`) within individual user detail views.
+     - Direct one-click account activation/deactivation via `list_editable` and bulk admin actions (`activate_users`, `deactivate_users`), with self-deactivation protection.
+     - Dynamic task statistics badges (`task_stats_display`) showing total, pending, and overdue tasks with direct filtering links.
+   - **User Task Management Capabilities:**
+     - Global visibility of tasks across all users with clear ownership identification and direct links to user profiles (`user_owner`).
+     - Visual status indicators (`priority_badge`, `due_status_badge`) calculating overdue days and deadlines.
+     - Multi-criteria filtering by completion status, priority, custom `DueStatusFilter` (`Overdue`, `Due Today`, `Upcoming`, `No Due Date`), due date, creation date, and owning user.
+     - Bulk task actions (`mark_as_completed`, `mark_as_pending`) and inline completion toggling (`list_editable = ('completed',)`).
+   - **Analytics KPI Dashboard:**
+     - Overrides `admin.site.index` to inject platform metrics into `templates/admin/index.html`.
+     - Displays 5 real-time KPI cards: Total Registered Users (active vs. inactive breakdown), Total Tasks, Pending Tasks, Completed Tasks, and Overdue Tasks.
+     - Every metric card links directly to the corresponding filtered changelist view.
+   - **Custom Emerald Theme & Navigation:**
+     - Custom branding, site header, and tab title configured via `admin.site.site_header`, `admin.site.site_title`, and `admin.site.index_title`.
+     - Branded templates (`templates/admin/base_site.html`, `templates/admin/index.html`) and dedicated stylesheet (`static/css/admin_theme.css`) implementing TaskFlow's signature emerald palette (`#064E3B`, `#047857`, `#10B981`, `#34D399`).
+     - Includes a direct "↗ Return to TaskFlow" shortcut linking administrators back to the primary user dashboard (`tasks:dashboard`).
 
 ---
 

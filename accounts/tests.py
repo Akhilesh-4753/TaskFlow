@@ -238,6 +238,41 @@ class AccountsTests(TestCase):
         session = self.client.session
         self.assertTrue(session.get_expire_at_browser_close())
 
+    def test_superuser_can_access_admin_dashboard(self):
+        """Superusers must be allowed access to the Django Admin and see dashboard metrics."""
+        admin_user = User.objects.create_superuser(
+            username='superadmin',
+            email='admin@example.com',
+            password='AdminPassword123!'
+        )
+        self.client.login(username='superadmin', password='AdminPassword123!')
+        response = self.client.get(reverse('admin:index'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'TaskFlow Overview & Metrics')
+        self.assertContains(response, 'Total Users')
+        self.assertContains(response, 'Total Tasks')
+
+    def test_normal_user_denied_admin_access(self):
+        """Standard active non-staff users must not be permitted into admin management."""
+        self.client.login(username='johndoe', password='StrongPassword123!')
+        response = self.client.get(reverse('admin:index'))
+        # Django admin redirects non-permitted users to login page
+        self.assertNotEqual(response.status_code, 200)
+
+    def test_staff_non_superuser_denied_admin_access(self):
+        """Non-superuser staff members must also be denied admin access per TaskFlow security policy."""
+        staff_user = User.objects.create_user(
+            username='staffuser',
+            email='staff@example.com',
+            password='StaffPassword123!',
+            is_staff=True,
+            is_superuser=False
+        )
+        self.client.login(username='staffuser', password='StaffPassword123!')
+        response = self.client.get(reverse('admin:index'))
+        self.assertNotEqual(response.status_code, 200)
+
+
 
 
 

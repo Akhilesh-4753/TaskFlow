@@ -1,0 +1,94 @@
+{% extends "admin/index.html" %}
+{% load static %}
+
+{% block content %}
+{% if dashboard_stats %}
+<div class="taskflow-admin-dashboard">
+  <div class="dashboard-header">
+    <div class="dashboard-title-group">
+      <h2 class="dashboard-main-title">TaskFlow Overview & Metrics</h2>
+      <p class="dashboard-subtitle">Real-time platform statistics for registered users, task completions, and pending actions.</p>
+    </div>
+    <div class="dashboard-badge-live">
+      <span class="live-dot"></span> Live Data
+    </div>
+  </div>
+
+  <div class="dashboard-cards-grid">
+    <!-- Total Registered Users -->
+    <a href="{% url 'admin:auth_user_changelist' %}" class="dashboard-card card-users" title="Click to view all registered users">
+      <div class="card-icon-wrapper users-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+      </div>
+      <div class="card-content">
+        <span class="card-label">Total Users</span>
+        <span class="card-value">{{ dashboard_stats.total_users }}</span>
+        <div class="card-breakdown">
+          <span class="sub-pill active-pill"><strong>{{ dashboard_stats.active_users }}</strong> active</span>
+          <span class="sub-pill inactive-pill"><strong>{{ dashboard_stats.inactive_users }}</strong> inactive</span>
+        </div>
+      </div>
+    </a>
+
+    <!-- Total Tasks -->
+    <a href="{% url 'admin:tasks_task_changelist' %}" class="dashboard-card card-tasks" title="Click to view all tasks">
+      <div class="card-icon-wrapper tasks-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
+      </div>
+      <div class="card-content">
+        <span class="card-label">Total Tasks</span>
+        <span class="card-value">{{ dashboard_stats.total_tasks }}</span>
+        <div class="card-breakdown">
+          <span class="sub-pill neutral-pill">Across all users</span>
+        </div>
+      </div>
+    </a>
+
+    <!-- Pending Tasks -->
+    <a href="{% url 'admin:tasks_task_changelist' %}?completed__exact=0" class="dashboard-card card-pending" title="Click to view pending tasks">
+      <div class="card-icon-wrapper pending-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+      </div>
+      <div class="card-content">
+        <span class="card-label">Pending Tasks</span>
+        <span class="card-value">{{ dashboard_stats.pending_tasks }}</span>
+        <div class="card-breakdown">
+          <span class="sub-pill warning-pill">In progress</span>
+        </div>
+      </div>
+    </a>
+
+    <!-- Completed Tasks -->
+    <a href="{% url 'admin:tasks_task_changelist' %}?completed__exact=1" class="dashboard-card card-completed" title="Click to view completed tasks">
+      <div class="card-icon-wrapper completed-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+      </div>
+      <div class="card-content">
+        <span class="card-label">Completed Tasks</span>
+        <span class="card-value">{{ dashboard_stats.completed_tasks }}</span>
+        <div class="card-breakdown">
+          <span class="sub-pill success-pill">Achieved goals</span>
+        </div>
+      </div>
+    </a>
+
+    <!-- Overdue Tasks -->
+    <a href="{% url 'admin:tasks_task_changelist' %}?due_status=overdue" class="dashboard-card card-overdue" title="Click to view overdue tasks">
+      <div class="card-icon-wrapper overdue-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+      </div>
+      <div class="card-content">
+        <span class="card-label">Overdue Tasks</span>
+        <span class="card-value">{{ dashboard_stats.overdue_tasks }}</span>
+        <div class="card-breakdown">
+          <span class="sub-pill danger-pill">Requires attention</span>
+        </div>
+      </div>
+    </a>
+  </div>
+</div>
+{% endif %}
+
+{{ block.super }}
+{% endblock %}
+

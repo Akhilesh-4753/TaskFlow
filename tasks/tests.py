@@ -519,6 +519,36 @@ class TaskTests(TestCase):
         call_command('send_task_reminders')
         self.assertEqual(len(mail.outbox), 1)
 
+    def test_task_admin_changelist_and_due_status_filter(self):
+        """Verify TaskAdmin changelist and custom DueStatusFilter."""
+        admin_user = User.objects.create_superuser(
+            username='taskadmin',
+            email='taskadmin@example.com',
+            password='AdminPassword123!'
+        )
+        self.client.login(username='taskadmin', password='AdminPassword123!')
+
+        today = timezone.now().date()
+        # Create overdue task
+        Task.objects.create(
+            user=self.user1,
+            title='Overdue Admin Test Task',
+            priority='high',
+            completed=False,
+            due_date=today - timedelta(days=2)
+        )
+
+        response = self.client.get(reverse('admin:tasks_task_changelist'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'User 1 Task')
+        self.assertContains(response, 'Overdue Admin Test Task')
+
+        # Test DueStatusFilter parameter
+        filter_response = self.client.get(reverse('admin:tasks_task_changelist') + '?due_status=overdue')
+        self.assertEqual(filter_response.status_code, 200)
+        self.assertContains(filter_response, 'Overdue Admin Test Task')
+
+
 
 
 
