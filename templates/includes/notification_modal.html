@@ -3,23 +3,29 @@
   <div class="notification-modal-box" role="dialog" aria-modal="true" aria-labelledby="notificationModalTitle">
     <!-- Header -->
     <div class="notification-modal-header">
-      <div class="d-flex align-items-center gap-2">
-        <div class="notif-header-icon">
-          <i class="bi bi-bell-fill"></i>
-        </div>
-        <div>
-          <h4 id="notificationModalTitle" class="notif-modal-title">Notifications</h4>
-          <p class="notif-modal-subtitle">Pending tasks with due dates</p>
-        </div>
-        <span id="notifCountBadge" class="notif-total-badge" style="display:none;">0</span>
-      </div>
       <button type="button" class="notif-close-btn" onclick="closeNotificationModal()" aria-label="Close notifications">
         <i class="bi bi-x-lg"></i>
       </button>
+
+      <!-- Notification Icon (at top) -->
+      <div class="notif-header-icon">
+        <i class="bi bi-bell-fill"></i>
+      </div>
+
+      <!-- Heading (below icon) -->
+      <h4 id="notificationModalTitle" class="notif-modal-title">Notifications</h4>
+
+      <!-- Subtitle (below heading) -->
+      <p class="notif-modal-subtitle">Pending tasks with due dates</p>
+
+      <!-- Task Count (below subtitle) -->
+      <div class="notif-count-wrapper">
+        <span id="notifCountBadge" class="notif-total-badge" style="display:none;">0</span>
+      </div>
     </div>
 
     <!-- Body -->
-    <div class="notification-modal-body" id="notificationModalBody">
+    <div class="notification-modal-body custom-scrollbar-green" id="notificationModalBody">
       <!-- Loading State -->
       <div id="notifLoading" class="notif-loading-state">
         <div class="notif-spinner"></div>

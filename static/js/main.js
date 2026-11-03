@@ -166,7 +166,7 @@ function renderNotifications(data) {
   // Update header badge
   if (countBadge) {
     countBadge.textContent = total;
-    countBadge.style.display = total > 0 ? 'inline-flex' : 'none';
+    countBadge.style.display = 'inline-flex';
   }
 
   // Update bell red dot
