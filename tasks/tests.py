@@ -3,7 +3,14 @@ from django.urls import reverse
 from django.contrib.auth.models import User
 from django.utils import timezone
 from datetime import timedelta
+from django.core import mail
+from django.core.management import call_command
 from tasks.models import Task
+from tasks.email_service import (
+    process_and_send_due_notifications,
+    send_upcoming_reminder_email,
+    send_overdue_alert_email,
+)
 
 
 class TaskTests(TestCase):
@@ -339,6 +346,150 @@ class TaskTests(TestCase):
         self.assertTrue(data['success'])
         self.assertEqual(data['count'], 0)
         self.assertEqual(data['tasks'], [])
+
+    def test_upcoming_task_reminder_email(self):
+        """Verify upcoming task reminder email is sent with correct subject, HTML table, and no duplicates."""
+        self.user1.email = 'user1@example.com'
+        self.user1.save()
+        today = timezone.now().date()
+        Task.objects.filter(user=self.user1).delete()
+
+        task = Task.objects.create(
+            user=self.user1,
+            title='Prepare Sprint Presentation',
+            description='Finalize slide deck for review',
+            priority='high',
+            completed=False,
+            due_date=today + timedelta(days=1)
+        )
+
+        mail.outbox.clear()
+        stats = process_and_send_due_notifications()
+        self.assertEqual(stats['upcoming_emails_sent'], 1)
+        self.assertEqual(len(mail.outbox), 1)
+
+        sent_email = mail.outbox[0]
+        self.assertEqual(sent_email.subject, 'Task Due Date Reminder – Action Required')
+        self.assertIn('user1@example.com', sent_email.to)
+        self.assertIn('Prepare Sprint Presentation', sent_email.body)
+        self.assertIn('Priority', sent_email.body)
+        self.assertIn('Status', sent_email.body)
+        self.assertIn('Due Date', sent_email.body)
+
+        # Check HTML alternative table
+        self.assertTrue(len(sent_email.alternatives) > 0)
+        html_content = sent_email.alternatives[0][0]
+        self.assertIn('No.', html_content)
+        self.assertIn('Task Title', html_content)
+        self.assertIn('Description', html_content)
+        self.assertIn('Priority', html_content)
+        self.assertIn('Status', html_content)
+        self.assertIn('Due Date', html_content)
+
+        # Verify task is flagged as sent
+        task.refresh_from_db()
+        self.assertTrue(task.upcoming_reminder_sent)
+        self.assertIsNotNone(task.upcoming_reminder_sent_at)
+
+        # Subsequent run must NOT send duplicate
+        mail.outbox.clear()
+        stats2 = process_and_send_due_notifications()
+        self.assertEqual(stats2['upcoming_emails_sent'], 0)
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_overdue_task_alert_email(self):
+        """Verify overdue task alert email has subject 'Overdue Task Alert – [Task Title]' and prevents duplicates."""
+        self.user1.email = 'user1@example.com'
+        self.user1.save()
+        today = timezone.now().date()
+        Task.objects.filter(user=self.user1).delete()
+
+        task = Task.objects.create(
+            user=self.user1,
+            title='Submit Tax Report',
+            description='Accounting documents submission',
+            priority='high',
+            completed=False,
+            due_date=today - timedelta(days=1)
+        )
+
+        mail.outbox.clear()
+        stats = process_and_send_due_notifications()
+        self.assertEqual(stats['overdue_emails_sent'], 1)
+        self.assertEqual(len(mail.outbox), 1)
+
+        sent_email = mail.outbox[0]
+        self.assertEqual(sent_email.subject, 'Overdue Task Alert – Submit Tax Report')
+        self.assertIn('user1@example.com', sent_email.to)
+        self.assertIn('Submit Tax Report', sent_email.body)
+
+        task.refresh_from_db()
+        self.assertTrue(task.overdue_alert_sent)
+        self.assertIsNotNone(task.overdue_alert_sent_at)
+
+        # Duplicate check
+        mail.outbox.clear()
+        stats2 = process_and_send_due_notifications()
+        self.assertEqual(stats2['overdue_emails_sent'], 0)
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_completed_tasks_and_tasks_without_due_date_excluded(self):
+        """Verify completed tasks or tasks without a due date never trigger notification emails."""
+        self.user1.email = 'user1@example.com'
+        self.user1.save()
+        today = timezone.now().date()
+        Task.objects.filter(user=self.user1).delete()
+
+        # Completed task with overdue date
+        Task.objects.create(
+            user=self.user1,
+            title='Completed Overdue Task',
+            priority='medium',
+            completed=True,
+            due_date=today - timedelta(days=2)
+        )
+        # Completed task with upcoming date
+        Task.objects.create(
+            user=self.user1,
+            title='Completed Upcoming Task',
+            priority='low',
+            completed=True,
+            due_date=today + timedelta(days=1)
+        )
+        # Pending task with NO due date
+        Task.objects.create(
+            user=self.user1,
+            title='Pending No Due Date Task',
+            priority='high',
+            completed=False,
+            due_date=None
+        )
+
+        mail.outbox.clear()
+        stats = process_and_send_due_notifications()
+        self.assertEqual(stats['overdue_emails_sent'], 0)
+        self.assertEqual(stats['upcoming_emails_sent'], 0)
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_management_command_send_task_reminders(self):
+        """Verify the 'send_task_reminders' management command runs cleanly."""
+        self.user1.email = 'user1@example.com'
+        self.user1.save()
+        today = timezone.now().date()
+        Task.objects.filter(user=self.user1).delete()
+
+        Task.objects.create(
+            user=self.user1,
+            title='Command Test Task',
+            priority='low',
+            completed=False,
+            due_date=today + timedelta(days=1)
+        )
+
+        mail.outbox.clear()
+        call_command('send_task_reminders')
+        self.assertEqual(len(mail.outbox), 1)
+
 
 
 

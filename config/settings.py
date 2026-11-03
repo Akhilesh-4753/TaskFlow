@@ -120,6 +120,26 @@ GROQ_API_KEY = os.getenv('GROQ_API_KEY', '').strip().strip('\'"')
 GROQ_MODEL = os.getenv('GROQ_MODEL', 'openai/gpt-oss-20b').strip().strip('\'"')
 GROQ_API_URL = os.getenv('GROQ_API_URL', 'https://api.groq.com/openai/v1/chat/completions').strip().strip('\'"')
 
+# Email Configuration (SMTP via .env)
+# In development without SMTP credentials, automatically fallback to console backend
+raw_email_backend = os.getenv('EMAIL_BACKEND', 'django.core.mail.backends.smtp.EmailBackend')
+if raw_email_backend == 'django.core.mail.backends.smtp.EmailBackend' and not os.getenv('EMAIL_HOST_USER') and DEBUG:
+    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+else:
+    EMAIL_BACKEND = raw_email_backend
+EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.gmail.com')
+EMAIL_PORT = int(os.getenv('EMAIL_PORT', 587))
+EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True').lower() in ('true', '1', 'yes')
+EMAIL_USE_SSL = os.getenv('EMAIL_USE_SSL', 'False').lower() in ('true', '1', 'yes')
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '')
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
+DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'TaskFlow <noreply@taskflow.local>')
+
+# Task Notification Scheduler Settings
+TASK_REMINDER_DAYS_BEFORE_DUE = int(os.getenv('TASK_REMINDER_DAYS_BEFORE_DUE', 1))
+ENABLE_NOTIFICATION_SCHEDULER = os.getenv('ENABLE_NOTIFICATION_SCHEDULER', 'True').lower() in ('true', '1', 'yes')
+NOTIFICATION_CHECK_INTERVAL_SECONDS = int(os.getenv('NOTIFICATION_CHECK_INTERVAL_SECONDS', 3600))
+
 # Logging Configuration
 LOGGING = {
     'version': 1,
@@ -138,6 +158,11 @@ LOGGING = {
     },
     'loggers': {
         'assistant': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'tasks': {
             'handlers': ['console'],
             'level': 'INFO',
             'propagate': False,

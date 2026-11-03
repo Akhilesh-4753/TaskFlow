@@ -1,0 +1,22 @@
+Hello {{ user_name }},
+
+{{ intro_message|default:"This is a reminder about your pending tasks. Please review the details below and complete them before or as soon as possible after their due dates." }}
+
+Task Details:
+--------------------------------------------------------------------------------
+{% for task in tasks %}
+{{ forloop.counter }}. {{ task.title }}
+   Description : {{ task.description|default:"—" }}
+   Priority    : {{ task.get_priority_display|default:task.priority|title }}
+   Status      : Pending
+   Due Date    : {{ task.due_date|date:"M d, Y" }}{% if task.is_overdue %} [OVERDUE]{% endif %}
+
+{% endfor %}
+--------------------------------------------------------------------------------
+
+Please log in to TaskFlow to manage your tasks and update their status:
+{{ app_url|default:"http://127.0.0.1:8000/tasks/list/" }}
+
+Best regards,
+TaskFlow Team
+

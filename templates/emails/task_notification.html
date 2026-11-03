@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ email_subject }}</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #F8FAF9; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #172B24;">
+  <div style="background-color: #F8FAF9; padding: 32px 16px;">
+    <!-- Main Card -->
+    <table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 640px; background-color: #FFFFFF; border-radius: 12px; border: 1px solid #E2EBE6; overflow: hidden; box-shadow: 0 4px 12px rgba(6, 78, 59, 0.08);">
+      <!-- Header Banner -->
+      <tr>
+        <td style="background: linear-gradient(135deg, #064E3B 0%, #047857 60%, #059669 100%); padding: 22px 28px;">
+          <table border="0" cellpadding="0" cellspacing="0" width="100%">
+            <tr>
+              <td>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                  <span style="display: inline-block; width: 32px; height: 32px; line-height: 32px; text-align: center; background: rgba(255, 255, 255, 0.2); border-radius: 8px; color: #FFFFFF; font-size: 16px; font-weight: bold;">✓</span>
+                  <span style="font-size: 20px; font-weight: 700; color: #FFFFFF; letter-spacing: -0.3px; margin-left: 8px;">TaskFlow</span>
+                </div>
+              </td>
+              <td align="right">
+                <span style="font-size: 11.5px; color: #A7F3D0; font-weight: 500;">Plan · Track · Complete</span>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+
+      <!-- Body Content -->
+      <tr>
+        <td style="padding: 28px 28px 24px 28px;">
+          <p style="font-size: 15px; color: #172B24; margin: 0 0 14px 0; font-weight: 600;">
+            Hello {{ user_name }},
+          </p>
+          <p style="font-size: 14px; color: #64756D; line-height: 1.6; margin: 0 0 22px 0;">
+            {{ intro_message|default:"This is a reminder about your pending tasks. Please review the details below and complete them before or as soon as possible after their due dates." }}
+          </p>
+
+          <!-- Task Details Table -->
+          <table border="0" cellpadding="0" cellspacing="0" width="100%" style="border-collapse: collapse; border: 1px solid #E2EBE6; font-size: 13px; margin-bottom: 24px; border-radius: 8px; overflow: hidden;">
+            <thead>
+              <tr style="background-color: #047857; color: #FFFFFF; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px;">
+                <th style="padding: 10px 10px; text-align: center; width: 36px; border-bottom: 1px solid #047857;">No.</th>
+                <th style="padding: 10px 12px; text-align: left; border-bottom: 1px solid #047857;">Task Title</th>
+                <th style="padding: 10px 12px; text-align: left; border-bottom: 1px solid #047857;">Description</th>
+                <th style="padding: 10px 10px; text-align: center; width: 80px; border-bottom: 1px solid #047857;">Priority</th>
+                <th style="padding: 10px 10px; text-align: center; width: 75px; border-bottom: 1px solid #047857;">Status</th>
+                <th style="padding: 10px 12px; text-align: center; width: 95px; border-bottom: 1px solid #047857;">Due Date</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for task in tasks %}
+              <tr style="background-color: {% cycle '#FFFFFF' '#FDFEFE' %}; border-bottom: 1px solid #E2EBE6;">
+                <td style="padding: 10px 10px; text-align: center; color: #64756D; font-size: 12px; font-weight: 600;">
+                  {{ forloop.counter }}
+                </td>
+                <td style="padding: 10px 12px; font-weight: 600; color: #172B24;">
+                  {{ task.title }}
+                </td>
+                <td style="padding: 10px 12px; color: #64756D; max-width: 180px; word-break: break-word;">
+                  {{ task.description|default:"—"|truncatechars:70 }}
+                </td>
+                <td style="padding: 10px 10px; text-align: center;">
+                  {% if task.priority == 'high' %}
+                    <span style="display: inline-block; padding: 2.5px 8px; border-radius: 12px; background-color: #FEE2E2; color: #DC2626; font-size: 11px; font-weight: 600;">High</span>
+                  {% elif task.priority == 'medium' %}
+                    <span style="display: inline-block; padding: 2.5px 8px; border-radius: 12px; background-color: #FEF3C7; color: #B45309; font-size: 11px; font-weight: 600;">Medium</span>
+                  {% else %}
+                    <span style="display: inline-block; padding: 2.5px 8px; border-radius: 12px; background-color: #ECFDF5; color: #047857; font-size: 11px; font-weight: 600;">Low</span>
+                  {% endif %}
+                </td>
+                <td style="padding: 10px 10px; text-align: center;">
+                  <span style="display: inline-block; padding: 2.5px 8px; border-radius: 12px; background-color: #F1F8F4; color: #065F46; font-size: 11px; font-weight: 600;">Pending</span>
+                </td>
+                <td style="padding: 10px 12px; text-align: center; white-space: nowrap;">
+                  {% if task.is_overdue %}
+                    <span style="color: #DC2626; font-weight: 700;">{{ task.due_date|date:"M d, Y" }}</span>
+                  {% else %}
+                    <span style="color: #172B24; font-weight: 500;">{{ task.due_date|date:"M d, Y" }}</span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+
+          <p style="font-size: 13.5px; color: #64756D; line-height: 1.6; margin: 0 0 20px 0;">
+            Please log in to TaskFlow to manage your tasks and update their status.
+          </p>
+
+          <table border="0" cellpadding="0" cellspacing="0" style="margin-bottom: 24px;">
+            <tr>
+              <td align="center" style="border-radius: 6px; background-color: #047857;">
+                <a href="{{ app_url|default:'http://127.0.0.1:8000/tasks/list/' }}" target="_blank"
+                   style="display: inline-block; padding: 10px 22px; font-size: 13.5px; font-weight: 600; color: #FFFFFF; text-decoration: none; border-radius: 6px; background-color: #047857;">
+                  Open TaskFlow &rarr;
+                </a>
+              </td>
+            </tr>
+          </table>
+
+          <p style="font-size: 13.5px; color: #172B24; margin: 0; line-height: 1.5;">
+            Best regards,<br>
+            <strong style="color: #047857;">TaskFlow Team</strong>
+          </p>
+        </td>
+      </tr>
+    </table>
+
+    <!-- Subtle Footer -->
+    <table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 640px; margin-top: 14px;">
+      <tr>
+        <td align="center" style="font-size: 11.5px; color: #8A9A92; padding: 6px 12px; line-height: 1.5;">
+          This is an automated notification from TaskFlow. Please do not reply directly to this email.<br>
+          &copy; TaskFlow. All rights reserved.
+        </td>
+      </tr>
+    </table>
+  </div>
+</body>
+</html>
+

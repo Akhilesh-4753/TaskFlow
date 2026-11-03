@@ -44,6 +44,25 @@ class Task(models.Model):
         blank=True,
         help_text='Optional due date for the task.'
     )
+    # Email notification tracking for duplicate prevention
+    upcoming_reminder_sent = models.BooleanField(
+        default=False,
+        help_text='Whether an upcoming due date reminder email has been sent.'
+    )
+    overdue_alert_sent = models.BooleanField(
+        default=False,
+        help_text='Whether an overdue alert email has been sent.'
+    )
+    upcoming_reminder_sent_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text='Timestamp when the upcoming reminder email was sent.'
+    )
+    overdue_alert_sent_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text='Timestamp when the overdue alert email was sent.'
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -54,6 +73,20 @@ class Task(models.Model):
 
     def __str__(self):
         return f"{self.title} ({self.user.username})"
+
+    def save(self, *args, **kwargs):
+        # If task due date is updated to a future date, reset notification flags
+        if self.pk:
+            original = Task.objects.filter(pk=self.pk).values('due_date').first()
+            if original and original['due_date'] != self.due_date and self.due_date:
+                today = timezone.now().date()
+                if self.due_date >= today:
+                    self.overdue_alert_sent = False
+                    self.overdue_alert_sent_at = None
+                    if self.due_date > today:
+                        self.upcoming_reminder_sent = False
+                        self.upcoming_reminder_sent_at = None
+        super().save(*args, **kwargs)
 
     def get_status_display_text(self):
         return 'Completed' if self.completed else 'Pending'
