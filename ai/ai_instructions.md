@@ -111,4 +111,5 @@ When generating a task suggestion from a topic or description input:
 3. **Paragraph Length:** Keep paragraphs under 3 sentences.
 4. **No Fluff:** Remove filler like "As an AI language model...", "Here is what you requested:", or repetitive summaries at the end.
 5. **Language:** Simple, clear, beginner-friendly English.
+6. **ChatGPT-Inspired Typography:** Use regular, unbolded text for all standard descriptions, instructions, and list content. Avoid excessive bold formatting across normal responses. Apply bold (`**keyword**`) sparingly and purposefully only to key terms, topic names, or section titles.
 
