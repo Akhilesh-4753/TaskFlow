@@ -141,13 +141,148 @@ function escapeHtml(text) {
 }
 
 function formatAIMessage(text) {
-  // Convert newlines to breaks and escape dangerous HTML
-  let formatted = escapeHtml(text).replace(/\n/g, '<br>');
-  // Format simple bullet points if any
-  formatted = formatted.replace(/•\s*(.*?)(<br>|$)/g, '<li>$1</li>');
-  if (formatted.includes('<li>')) {
-    formatted = '<ul style="padding-left:18px;margin:4px 0;">' + formatted + '</ul>';
+  if (!text) return '';
+
+  // Extract code blocks first to protect code content from text replacements
+  const codeBlocks = [];
+  let processed = text.replace(/```([a-zA-Z0-9_-]*)\n([\s\S]*?)```/g, function(match, lang, code) {
+    const placeholder = `__CODE_BLOCK_${codeBlocks.length}__`;
+    codeBlocks.push({ lang: (lang || '').trim(), code: escapeHtml(code.trim()) });
+    return placeholder;
+  });
+
+  // Extract inline code
+  const inlineCodes = [];
+  processed = processed.replace(/`([^`\n]+)`/g, function(match, code) {
+    const placeholder = `__INLINE_CODE_${inlineCodes.length}__`;
+    inlineCodes.push(escapeHtml(code));
+    return placeholder;
+  });
+
+  // Escape HTML in the rest of the text
+  processed = escapeHtml(processed);
+
+  // Restore inline codes
+  inlineCodes.forEach((code, idx) => {
+    processed = processed.replace(`__INLINE_CODE_${idx}__`, `<code>${code}</code>`);
+  });
+
+  // Split into lines for block-level processing
+  const lines = processed.split('\n');
+  const outputLines = [];
+  let inUl = false;
+  let inOl = false;
+
+  for (let i = 0; i < lines.length; i++) {
+    let line = lines[i].trim();
+
+    // Check code block placeholder
+    if (line.startsWith('__CODE_BLOCK_') && line.endsWith('__')) {
+      if (inUl) { outputLines.push('</ul>'); inUl = false; }
+      if (inOl) { outputLines.push('</ol>'); inOl = false; }
+      const blockIdx = parseInt(line.replace('__CODE_BLOCK_', '').replace('__', ''), 10);
+      const block = codeBlocks[blockIdx];
+      if (block) {
+        outputLines.push(`<pre><code class="language-${block.lang}">${block.code}</code></pre>`);
+      }
+      continue;
+    }
+
+    // Horizontal Rule
+    if (/^(\-{3,}|\*{3,}|_{3,})$/.test(line)) {
+      if (inUl) { outputLines.push('</ul>'); inUl = false; }
+      if (inOl) { outputLines.push('</ol>'); inOl = false; }
+      outputLines.push('<hr>');
+      continue;
+    }
+
+    // Headings (###, ##, #)
+    const h3Match = line.match(/^###\s+(.+)$/);
+    if (h3Match) {
+      if (inUl) { outputLines.push('</ul>'); inUl = false; }
+      if (inOl) { outputLines.push('</ol>'); inOl = false; }
+      outputLines.push(`<h3>${formatInlineStyles(h3Match[1])}</h3>`);
+      continue;
+    }
+
+    const h2Match = line.match(/^##\s+(.+)$/);
+    if (h2Match) {
+      if (inUl) { outputLines.push('</ul>'); inUl = false; }
+      if (inOl) { outputLines.push('</ol>'); inOl = false; }
+      outputLines.push(`<h2>${formatInlineStyles(h2Match[1])}</h2>`);
+      continue;
+    }
+
+    const h1Match = line.match(/^#\s+(.+)$/);
+    if (h1Match) {
+      if (inUl) { outputLines.push('</ul>'); inUl = false; }
+      if (inOl) { outputLines.push('</ol>'); inOl = false; }
+      outputLines.push(`<h1>${formatInlineStyles(h1Match[1])}</h1>`);
+      continue;
+    }
+
+    // Blockquote
+    const bqMatch = line.match(/^>\s+(.+)$/);
+    if (bqMatch) {
+      if (inUl) { outputLines.push('</ul>'); inUl = false; }
+      if (inOl) { outputLines.push('</ol>'); inOl = false; }
+      outputLines.push(`<blockquote>${formatInlineStyles(bqMatch[1])}</blockquote>`);
+      continue;
+    }
+
+    // Checklists (- [ ] or - [x])
+    const checkMatch = line.match(/^[-*•]\s+\[([ xX])\]\s+(.+)$/);
+    if (checkMatch) {
+      if (inOl) { outputLines.push('</ol>'); inOl = false; }
+      if (!inUl) { outputLines.push('<ul>'); inUl = true; }
+      const checked = checkMatch[1].toLowerCase() === 'x' ? 'checked' : '';
+      outputLines.push(`<li style="list-style:none;margin-left:-14px;"><input type="checkbox" ${checked} disabled style="margin-right:6px;vertical-align:middle;">${formatInlineStyles(checkMatch[2])}</li>`);
+      continue;
+    }
+
+    // Unordered List (- , * , • )
+    const ulMatch = line.match(/^[-*•]\s+(.+)$/);
+    if (ulMatch) {
+      if (inOl) { outputLines.push('</ol>'); inOl = false; }
+      if (!inUl) { outputLines.push('<ul>'); inUl = true; }
+      outputLines.push(`<li>${formatInlineStyles(ulMatch[1])}</li>`);
+      continue;
+    }
+
+    // Ordered List (1. , 2. )
+    const olMatch = line.match(/^(\d+)\.\s+(.+)$/);
+    if (olMatch) {
+      if (inUl) { outputLines.push('</ul>'); inUl = false; }
+      if (!inOl) { outputLines.push('<ol>'); inOl = true; }
+      outputLines.push(`<li>${formatInlineStyles(olMatch[2])}</li>`);
+      continue;
+    }
+
+    // Regular line / Paragraph
+    if (inUl) { outputLines.push('</ul>'); inUl = false; }
+    if (inOl) { outputLines.push('</ol>'); inOl = false; }
+
+    if (!line) {
+      outputLines.push('');
+    } else {
+      outputLines.push(`<p>${formatInlineStyles(line)}</p>`);
+    }
   }
-  return formatted;
+
+  if (inUl) outputLines.push('</ul>');
+  if (inOl) outputLines.push('</ol>');
+
+  return outputLines.filter(l => l !== '').join('\n');
+}
+
+function formatInlineStyles(str) {
+  if (!str) return '';
+  // Bold (**text** or __text__)
+  let s = str.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  s = s.replace(/__(.+?)__/g, '<strong>$1</strong>');
+  // Italic (*text* or _text_)
+  s = s.replace(/\*([^\*\n]+?)\*/g, '<em>$1</em>');
+  s = s.replace(/_([^_\n]+?)_/g, '<em>$1</em>');
+  return s;
 }
 

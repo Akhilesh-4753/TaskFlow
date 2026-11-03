@@ -33,6 +33,7 @@ INSTALLED_APPS = [
     'tasks',
     'reports',
     'assistant',
+    'chatbot',
 ]
 
 MIDDLEWARE = [

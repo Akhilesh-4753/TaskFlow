@@ -307,3 +307,36 @@ def task_bulk_toggle_view(request):
     return JsonResponse({'success': False, 'message': 'Invalid request.'}, status=405)
 
 
+@login_required
+def task_suggest_ai_view(request):
+    """
+    Generate actionable task suggestion via centralized AI service.
+    Accepts topic from description or title and returns task suggestion.
+    """
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'POST method required.'}, status=405)
+
+    import json
+    try:
+        data = json.loads(request.body)
+    except (json.JSONDecodeError, ValueError):
+        return JsonResponse({'success': False, 'error': 'Invalid JSON request.'}, status=400)
+
+    topic = data.get('topic') or data.get('description') or data.get('title', '')
+    cleaned_topic = str(topic).strip()
+
+    if not cleaned_topic:
+        return JsonResponse({'success': False, 'error': 'Please enter a topic or title.'}, status=400)
+
+    from ai.services import generate_task_suggestion
+    result = generate_task_suggestion(topic=cleaned_topic, user=request.user)
+    if result.get('success'):
+        return JsonResponse({
+            'success': True,
+            'description': result['description'],
+            'title': result.get('title', ''),
+        })
+    return JsonResponse({'success': False, 'error': result.get('error', 'Failed to generate task suggestion.')}, status=503)
+
+
+

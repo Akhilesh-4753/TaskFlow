@@ -444,16 +444,21 @@ function suggestDescription() {
   const descInput = document.getElementById('create_description');
   const btn = document.getElementById('aiSuggestBtn');
 
-  const title = titleInput.value.trim();
-  if (!title) {
-    alert('Please enter a task title first so the AI can generate a relevant description.');
-    titleInput.focus();
+  const descTopic = descInput ? descInput.value.trim() : '';
+  const titleTopic = titleInput ? titleInput.value.trim() : '';
+  const topic = descTopic || titleTopic;
+
+  if (!topic) {
+    alert('Please enter a topic in the Description or Title field first.');
+    if (descInput) descInput.focus();
     return;
   }
 
-  const originalHtml = btn.innerHTML;
-  btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> Generating...';
-  btn.disabled = true;
+  const originalHtml = btn ? btn.innerHTML : '';
+  if (btn) {
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> Generating...';
+    btn.disabled = true;
+  }
 
   fetch('/assistant/suggest/', {
     method: 'POST',
@@ -462,17 +467,30 @@ function suggestDescription() {
       'X-CSRFToken': getCookie('csrftoken'),
       'X-Requested-With': 'XMLHttpRequest'
     },
-    body: JSON.stringify({ title: title })
+    body: JSON.stringify({
+      topic: topic,
+      description: descTopic,
+      title: titleTopic
+    })
   })
   .then(res => res.json())
   .then(data => {
-    btn.innerHTML = originalHtml;
-    btn.disabled = false;
+    if (btn) {
+      btn.innerHTML = originalHtml;
+      btn.disabled = false;
+    }
 
-    if (data.success) {
+    if (data.success && data.description) {
       descInput.value = data.description;
       const descCount = document.getElementById('create_desc_count');
       if (descCount) descCount.textContent = data.description.length;
+
+      // If title is empty, suggest a clean title so form can be submitted cleanly
+      if (titleInput && !titleInput.value.trim() && data.title) {
+        titleInput.value = data.title;
+        const titleCount = document.getElementById('create_title_count');
+        if (titleCount) titleCount.textContent = data.title.length;
+      }
       descInput.focus();
     } else {
       alert(data.error || 'Failed to generate AI suggestion.');
@@ -480,21 +498,34 @@ function suggestDescription() {
   })
   .catch(err => {
     console.error('AI suggest error:', err);
-    btn.innerHTML = originalHtml;
-    btn.disabled = false;
+    if (btn) {
+      btn.innerHTML = originalHtml;
+      btn.disabled = false;
+    }
     alert('AI suggestion service is currently unavailable.');
   });
 }
 
-function suggestDescriptionForEdit() {
+function suggestDescriptionForEdit(btnElement) {
   const titleInput = document.getElementById('edit_title');
   const descInput = document.getElementById('edit_description');
+  const btn = btnElement || event?.currentTarget || document.querySelector('#editTaskModal .btn-ai-suggest');
 
-  const title = titleInput.value.trim();
-  if (!title) {
-    alert('Please enter a task title first.');
-    titleInput.focus();
+  const descTopic = descInput ? descInput.value.trim() : '';
+  const titleTopic = titleInput ? titleInput.value.trim() : '';
+  const topic = descTopic || titleTopic;
+
+  if (!topic) {
+    alert('Please enter a topic in the Description or Title field first.');
+    if (descInput) descInput.focus();
     return;
+  }
+
+  let originalHtml = '';
+  if (btn) {
+    originalHtml = btn.innerHTML;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> Generating...';
+    btn.disabled = true;
   }
 
   fetch('/assistant/suggest/', {
@@ -504,11 +535,20 @@ function suggestDescriptionForEdit() {
       'X-CSRFToken': getCookie('csrftoken'),
       'X-Requested-With': 'XMLHttpRequest'
     },
-    body: JSON.stringify({ title: title })
+    body: JSON.stringify({
+      topic: topic,
+      description: descTopic,
+      title: titleTopic
+    })
   })
   .then(res => res.json())
   .then(data => {
-    if (data.success) {
+    if (btn) {
+      btn.innerHTML = originalHtml;
+      btn.disabled = false;
+    }
+
+    if (data.success && data.description) {
       descInput.value = data.description;
       const descCount = document.getElementById('edit_desc_count');
       if (descCount) descCount.textContent = data.description.length;
@@ -519,6 +559,10 @@ function suggestDescriptionForEdit() {
   })
   .catch(err => {
     console.error('AI suggest error:', err);
+    if (btn) {
+      btn.innerHTML = originalHtml;
+      btn.disabled = false;
+    }
     alert('AI suggestion service is currently unavailable.');
   });
 }

@@ -13,5 +13,6 @@ urlpatterns = [
     path('tasks/', include('tasks.urls', namespace='tasks')),
     path('reports/', include('reports.urls', namespace='reports')),
     path('assistant/', include('assistant.urls', namespace='assistant')),
+    path('chatbot/', include('chatbot.urls', namespace='chatbot')),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
