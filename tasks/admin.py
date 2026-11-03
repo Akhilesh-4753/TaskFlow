@@ -46,7 +46,7 @@ class TaskAdmin(admin.ModelAdmin):
         'title',
         'user_owner',
         'priority_badge',
-        'completed',
+        'status_badge',
         'due_date',
         'due_status_badge',
         'created_at'
@@ -67,7 +67,6 @@ class TaskAdmin(admin.ModelAdmin):
         'user__first_name',
         'user__last_name'
     )
-    list_editable = ('completed',)
     ordering = ('-created_at',)
     autocomplete_fields = ['user']
     actions = ['mark_as_completed', 'mark_as_pending']

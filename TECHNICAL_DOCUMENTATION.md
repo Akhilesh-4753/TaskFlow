@@ -271,7 +271,6 @@ E:\BlackBox\TaskFlow\
   - `TaskInline(admin.TabularInline)`: Embeds all tasks owned by the selected user inside the User change view with direct change links and creation timestamps.
   - `CustomUserAdmin(UserAdmin)`:
     - `list_display`: Displays username, email, full name, active status, staff status, superuser status, live task statistics (`task_stats_display`), date joined, and last login.
-    - `list_editable`: Allows instant inline account activation/deactivation via `('is_active',)`.
     - `actions`: `activate_users` and `deactivate_users` bulk operations (with self-deactivation protection for the active superuser).
     - `task_stats_display`: Computes total tasks, pending tasks, and overdue tasks with formatted visual badges linking directly to filtered user tasks in `TaskAdmin`.
   - `ProfileAdmin`: Manages standalone profiles with email display, avatar indicator, and registration timestamps.
@@ -348,10 +347,9 @@ E:\BlackBox\TaskFlow\
 - **Components:**
   - `DueStatusFilter(admin.SimpleListFilter)`: Custom sidebar filter classifying tasks into `Overdue`, `Due Today`, `Upcoming`, and `No Due Date`.
   - `TaskAdmin(admin.ModelAdmin)`:
-    - `list_display`: Title, task owner with user change link and email (`user_owner`), colored priority dot badge (`priority_badge`), inline completion toggle (`completed`), due date, calculated overdue/upcoming badge (`due_status_badge`), and creation timestamp.
+    - `list_display`: Title, task owner with user change link and email (`user_owner`), colored priority dot badge (`priority_badge`), status pill badge (`status_badge`), due date, calculated overdue/upcoming badge (`due_status_badge`), and creation timestamp.
     - `list_filter`: Completion status, priority, `DueStatusFilter`, due date, creation date, and owning user.
     - `search_fields`: Search by task title, description, and owner attributes (`user__username`, `user__email`, `user__first_name`, `user__last_name`).
-    - `list_editable`: `('completed',)` allowing direct completion toggling from the changelist table.
     - `actions`: `mark_as_completed` and `mark_as_pending` bulk status modifiers.
     - `autocomplete_fields`: `['user']` with asynchronous user lookup.
     - `fieldsets`: Organized sections for Task Details, Status & Scheduling, Notification Delivery Tracking (collapsed), and System Timestamps (collapsed).
@@ -567,13 +565,16 @@ erDiagram
    - **User Management Capabilities:**
      - Registered user inspection with multi-field search (`username`, `first_name`, `last_name`, `email`) and filtering (`is_active`, `is_staff`, `is_superuser`, `date_joined`, `last_login`).
      - Inline user profile (`ProfileInline`) and task inspection (`TaskInline`) within individual user detail views.
-     - Direct one-click account activation/deactivation via `list_editable` and bulk admin actions (`activate_users`, `deactivate_users`), with self-deactivation protection.
+     - Bulk account activation/deactivation actions (`activate_users`, `deactivate_users`), with self-deactivation protection.
      - Dynamic task statistics badges (`task_stats_display`) showing total, pending, and overdue tasks with direct filtering links.
    - **User Task Management Capabilities:**
      - Global visibility of tasks across all users with clear ownership identification and direct links to user profiles (`user_owner`).
-     - Visual status indicators (`priority_badge`, `due_status_badge`) calculating overdue days and deadlines.
+     - Visual status indicators (`priority_badge`, `status_badge`, `due_status_badge`) calculating completion states, overdue days, and deadlines.
      - Multi-criteria filtering by completion status, priority, custom `DueStatusFilter` (`Overdue`, `Due Today`, `Upcoming`, `No Due Date`), due date, creation date, and owning user.
-     - Bulk task actions (`mark_as_completed`, `mark_as_pending`) and inline completion toggling (`list_editable = ('completed',)`).
+     - Bulk task actions (`mark_as_completed`, `mark_as_pending`) and full detail change views.
+   - **Changelist Cleanliness & Edit Form Save Button Preservation:**
+     - Django Admin's `list_editable` configuration generates an extraneous bottom "Save" button across changelist tables because it wraps the listing in an edit formset. Removing `list_editable` from `CustomUserAdmin` and `TaskAdmin` eliminates these redundant Save buttons from changelist views (Total Users, Total Tasks, Pending Tasks, Completed Tasks, and Overdue Tasks), preventing administrative confusion while viewing statistics.
+     - Standard Django Admin "Save", "Save and continue editing", and "Save and add another" buttons are fully preserved on actual user (`/admin/auth/user/<id>/change/`) and task (`/admin/tasks/task/<id>/change/`) detail editing forms.
    - **Analytics KPI Dashboard:**
      - Overrides `admin.site.index` to inject platform metrics into `templates/admin/index.html`.
      - Displays 5 real-time KPI cards: Total Registered Users (active vs. inactive breakdown), Total Tasks, Pending Tasks, Completed Tasks, and Overdue Tasks.

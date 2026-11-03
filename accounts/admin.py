@@ -63,7 +63,6 @@ class CustomUserAdmin(UserAdmin):
     list_filter = ('is_active', 'is_staff', 'is_superuser', 'date_joined', 'last_login')
     search_fields = ('username', 'first_name', 'last_name', 'email')
     ordering = ('-date_joined',)
-    list_editable = ('is_active',)
     actions = ['activate_users', 'deactivate_users']
 
     @admin.display(description='Task Statistics (Total / Pending / Overdue)')
