@@ -76,6 +76,7 @@
 .task-desc-text {
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -95,9 +96,25 @@
 .task-desc-text.expanded {
   display: block;
   -webkit-line-clamp: unset;
+  line-clamp: unset;
   overflow: visible;
   max-height: none;
+  color: var(--text-primary);
 }
+
+@media (max-width: 768px) {
+  .task-table tbody td.task-desc-cell {
+    align-items: flex-start;
+    text-align: left;
+    max-width: 100%;
+    min-width: 0;
+  }
+  .task-table tbody td.task-desc-cell .task-desc-text {
+    margin: 0;
+    text-align: left;
+  }
+}
+
 
 
 

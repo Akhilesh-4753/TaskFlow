@@ -6,36 +6,29 @@
 {% block page_subtitle %}Manage, edit, and track all your tasks.{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/tasks.css' %}">
+<link rel="stylesheet" href="{% static 'css/tasks.css' %}?v={% now 'U' %}">
 {% endblock %}
 
 {% block content %}
 <span id="global-csrf" style="display:none;">{% csrf_token %}</span>
 
-<!-- Header & Search & Add Task -->
-<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:14px;">
-  <div>
-    <h4 style="margin:0;font-size:18px;font-weight:700;color:var(--text-primary);">All Tasks</h4>
-    <p style="margin:2px 0 0;font-size:13px;color:var(--text-secondary);">Manage, edit, and track all your tasks.</p>
-  </div>
+<!-- Search & Add Task Action Bar -->
+<div style="display:flex;align-items:center;justify-content:flex-end;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
+  <!-- Search Form -->
+  <form method="get" style="display:flex;align-items:center;position:relative;">
+    <input type="hidden" name="status" value="{{ status_filter }}">
+    <input type="hidden" name="priority" value="{{ priority_filter }}">
+    {% if request.GET.overdue %}<input type="hidden" name="overdue" value="1">{% endif %}
+    <i class="bi bi-search"
+      style="position:absolute;left:12px;color:var(--text-muted);font-size:13px;pointer-events:none;"></i>
+    <input type="text" name="search" class="form-control"
+      style="padding-left:34px;width:220px;border-radius:var(--radius-sm);height:38px;font-size:13px;"
+      placeholder="Search tasks..." value="{{ search_query }}">
+  </form>
 
-  <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
-    <!-- Search Form -->
-    <form method="get" style="display:flex;align-items:center;position:relative;">
-      <input type="hidden" name="status" value="{{ status_filter }}">
-      <input type="hidden" name="priority" value="{{ priority_filter }}">
-      {% if request.GET.overdue %}<input type="hidden" name="overdue" value="1">{% endif %}
-      <i class="bi bi-search"
-        style="position:absolute;left:12px;color:var(--text-muted);font-size:13px;pointer-events:none;"></i>
-      <input type="text" name="search" class="form-control"
-        style="padding-left:34px;width:220px;border-radius:var(--radius-sm);height:38px;font-size:13px;"
-        placeholder="Search tasks..." value="{{ search_query }}">
-    </form>
-
-    <button class="btn-primary-custom" onclick="openCreateModal()" style="height:38px;">
-      <i class="bi bi-plus-lg"></i> Add Task
-    </button>
-  </div>
+  <button class="btn-primary-custom" onclick="openCreateModal()" style="height:38px;">
+    <i class="bi bi-plus-lg"></i> Add Task
+  </button>
 </div>
 
 <!-- Filters Row: Status Pills on left, Priority Dropdown on right -->
@@ -101,12 +94,13 @@
             <th style="width:36px;text-align:center;">
               <input type="checkbox" id="selectAllTasks" class="task-checkbox" style="cursor:pointer;" title="Select all" onchange="toggleSelectAll(this)">
             </th>
-            <th style="width:50px;text-align:center;">No.</th>
-            <th style="text-align:center;">Title</th>
-            <th style="width:110px;text-align:center;">Priority</th>
-            <th style="width:120px;text-align:center;">Status</th>
-            <th style="width:120px;text-align:center;">Due Date</th>
-            <th style="width:90px;text-align:center;">Actions</th>
+            <th style="width:45px;text-align:center;">No.</th>
+            <th style="min-width:140px;text-align:center;">Title</th>
+            <th style="min-width:180px;max-width:280px;text-align:center;">Description</th>
+            <th style="width:95px;text-align:center;">Priority</th>
+            <th style="width:110px;text-align:center;">Status</th>
+            <th style="width:110px;text-align:center;">Due Date</th>
+            <th style="width:85px;text-align:center;">Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -125,6 +119,18 @@
               <span {% if task.completed %}style="text-decoration:line-through;color:var(--text-muted);" {% endif %}>
                 {{ task.title }}
               </span>
+            </td>
+            <td class="task-desc-cell" data-label="Description" style="text-align:center;">
+              {% if task.description %}
+              <div class="task-desc-text"
+                   data-full-text="{{ task.description|escape }}"
+                   title="{{ task.description }}"
+                   onclick="toggleDescExpand(this)">
+                {{ task.description }}
+              </div>
+              {% else %}
+              <span style="color:var(--text-muted);font-size:12px;font-style:italic;">—</span>
+              {% endif %}
             </td>
             <td data-label="Priority" style="text-align:center;">
               <span class="badge-priority badge-{{ task.priority }}">{{ task.get_priority_display }}</span>

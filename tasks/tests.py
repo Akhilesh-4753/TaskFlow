@@ -183,3 +183,39 @@ class TaskTests(TestCase):
         past_task.save()
         self.assertFalse(past_task.is_overdue())
 
+    def test_task_list_description_column(self):
+        self.client.login(username='user1', password='Password123!')
+        Task.objects.create(
+            user=self.user1,
+            title='Task without description',
+            description='',
+            priority='low',
+            completed=False
+        )
+
+        res = self.client.get(reverse('tasks:task_list'))
+        self.assertEqual(res.status_code, 200)
+        self.assertContains(res, '>Description</th>')
+        self.assertContains(res, 'class="task-desc-cell"')
+        self.assertContains(res, 'class="task-desc-text"')
+        self.assertContains(res, 'Description 1')
+        self.assertContains(res, 'title="Description 1"')
+        self.assertContains(res, '—')
+
+    def test_dynamic_page_headers_across_modules(self):
+        """Verify each sidebar module displays its corresponding title and description in the header."""
+        self.client.login(username='user1', password='Password123!')
+        modules = [
+            (reverse('tasks:dashboard'), 'Dashboard', "Here's your productivity overview."),
+            (reverse('tasks:task_list'), 'All Tasks', "Manage, edit, and track all your tasks."),
+            (reverse('reports:report_dashboard'), 'Reports', "Track your productivity and task progress."),
+            (reverse('accounts:profile'), 'Profile', "Manage your account settings."),
+        ]
+        for url, expected_title, expected_subtitle in modules:
+            res = self.client.get(url)
+            self.assertEqual(res.status_code, 200)
+            self.assertContains(res, f"<h1>{expected_title}</h1>")
+            self.assertContains(res, expected_subtitle)
+
+
+

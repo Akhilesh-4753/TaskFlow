@@ -121,6 +121,7 @@ def profile_view(request):
         'avatar_form': avatar_form,
         'password_form': password_form,
         'profile': profile,
+        'active_page': 'profile',
     }
     return render(request, 'accounts/profile.html', context)
 

@@ -587,4 +587,19 @@ function handleRowCheckboxChange() {
   updateSelectAllCheckboxState();
 }
 
+/**
+ * Toggle Description Expand / Collapse on Click
+ */
+function toggleDescExpand(elem) {
+  if (!elem) return;
+  const isExpanded = elem.classList.toggle('expanded');
+  const fullText = elem.getAttribute('data-full-text') || '';
+  if (isExpanded) {
+    elem.title = 'Click to collapse description';
+  } else {
+    elem.title = fullText || 'Click to expand';
+  }
+}
+
+
 

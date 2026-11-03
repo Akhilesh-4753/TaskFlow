@@ -3,20 +3,139 @@ Groq AI service module.
 All API communication is done server-side. Never expose the API key to the browser.
 """
 
+import os
 import requests
 import logging
 from django.conf import settings
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('assistant')
 
 GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions'
 MAX_MESSAGE_LENGTH = 2000
 MAX_HISTORY_MESSAGES = 10
 
+PLACEHOLDER_KEYS = {
+    '',
+    'your-groq-api-key-here',
+    'your_groq_api_key_here',
+    'gsk_your_groq_api_key_here',
+    'your_api_key_here',
+}
 
-def is_groq_configured():
+
+class GroqClient:
+    """
+    Groq AI Client wrapper.
+    Securely manages Groq API credentials loaded via os.getenv() / django settings,
+    manages HTTP sessions, handles API requests, and provides logging and error handling.
+    """
+
+    def __init__(self, api_key: str = None, model: str = None, api_url: str = None):
+        self._custom_api_key = str(api_key).strip() if api_key is not None else None
+        self._custom_model = str(model).strip() if model is not None else None
+        self.api_url = api_url or getattr(settings, 'GROQ_API_URL', GROQ_API_URL)
+
+        if not self.is_configured():
+            logger.error(
+                "AI service is not configured. GROQ_API_KEY is missing or empty in .env. "
+                "Please configure a valid GROQ_API_KEY in your .env file."
+            )
+        else:
+            masked_key = self.api_key[:6] + '...' + self.api_key[-4:] if len(self.api_key) > 10 else '***'
+            logger.info("GroqClient initialized successfully (model: %s, key: %s).", self.model, masked_key)
+
+    @property
+    def api_key(self) -> str:
+        if self._custom_api_key is not None:
+            return self._custom_api_key
+        key = getattr(settings, 'GROQ_API_KEY', None)
+        if key is None or not str(key).strip():
+            key = os.getenv('GROQ_API_KEY', '')
+        return str(key or '').strip()
+
+    @property
+    def model(self) -> str:
+        if self._custom_model is not None:
+            return self._custom_model
+        m = getattr(settings, 'GROQ_MODEL', None)
+        if m is None or not str(m).strip():
+            m = os.getenv('GROQ_MODEL', 'llama3-8b-8192')
+        return str(m or 'llama3-8b-8192').strip()
+
+    def is_configured(self) -> bool:
+        """Check if client has a valid, non-placeholder API key."""
+        return is_groq_configured()
+
+    def get_headers(self) -> dict:
+        return {
+            'Authorization': f'Bearer {self.api_key}',
+            'Content-Type': 'application/json',
+        }
+
+    def chat_completion(self, messages: list, max_tokens: int = 500, temperature: float = 0.8, timeout: int = 20) -> dict:
+        """Send chat completion request to Groq API with robust error handling."""
+        if not self.is_configured():
+            logger.error("AI service configuration error: GROQ_API_KEY is not configured in .env.")
+            return {'success': False, 'error': 'AI service is not configured. Please add your GROQ_API_KEY.'}
+
+        payload = {
+            'model': self.model,
+            'messages': messages,
+            'max_tokens': max_tokens,
+            'temperature': temperature,
+        }
+
+        try:
+            response = requests.post(
+                self.api_url,
+                headers=self.get_headers(),
+                json=payload,
+                timeout=timeout,
+            )
+
+            if response.status_code == 401:
+                logger.error("Groq API 401 Unauthorized: Invalid GROQ_API_KEY. Please verify the key in your .env file.")
+                return {'success': False, 'error': 'AI service authentication failed. Invalid GROQ_API_KEY.'}
+            elif response.status_code == 429:
+                logger.warning("Groq API 429 Rate Limit exceeded.")
+                return {'success': False, 'error': 'AI service rate limit reached. Please wait a moment and try again.'}
+
+            response.raise_for_status()
+            data = response.json()
+            reply = data['choices'][0]['message']['content'].strip()
+            return {'success': True, 'content': reply}
+
+        except requests.exceptions.Timeout:
+            logger.error('Groq API request timed out after %ds', timeout)
+            return {'success': False, 'error': 'AI service timed out. Please try again.'}
+        except requests.exceptions.RequestException as e:
+            logger.error('Groq API request error: %s', e)
+            return {'success': False, 'error': 'AI service is currently unavailable.'}
+        except (KeyError, IndexError, ValueError) as e:
+            logger.error('Groq API response parsing error: %s', e)
+            return {'success': False, 'error': 'Unexpected response from AI service.'}
+
+
+_client_instance = None
+
+
+def get_groq_client() -> GroqClient:
+    """Return an initialized GroqClient instance."""
+    global _client_instance
+    if _client_instance is None:
+        _client_instance = GroqClient()
+    return _client_instance
+
+
+def is_groq_configured() -> bool:
     """Check if Groq API is properly configured."""
-    return bool(getattr(settings, 'GROQ_API_KEY', ''))
+    key = getattr(settings, 'GROQ_API_KEY', None)
+    if key is None or not str(key).strip():
+        key = os.getenv('GROQ_API_KEY', '')
+    cleaned = str(key or '').strip()
+    if not cleaned or cleaned.lower() in PLACEHOLDER_KEYS:
+        return False
+    return True
 
 
 def get_task_description_suggestion(title: str, user=None) -> dict:
@@ -37,38 +156,19 @@ def get_task_description_suggestion(title: str, user=None) -> dict:
         "Do not include the title in the description. Keep it professional and practical."
     )
 
-    try:
-        response = requests.post(
-            GROQ_API_URL,
-            headers={
-                'Authorization': f'Bearer {settings.GROQ_API_KEY}',
-                'Content-Type': 'application/json',
-            },
-            json={
-                'model': settings.GROQ_MODEL,
-                'messages': [
-                    {'role': 'system', 'content': system_prompt},
-                    {'role': 'user', 'content': f'Write a description for this task: {title.strip()}'},
-                ],
-                'max_tokens': 300,
-                'temperature': 0.7,
-            },
-            timeout=15,
-        )
-        response.raise_for_status()
-        data = response.json()
-        description = data['choices'][0]['message']['content'].strip()
-        return {'success': True, 'description': description}
-
-    except requests.exceptions.Timeout:
-        logger.error('Groq API timeout for task description')
-        return {'success': False, 'error': 'AI service timed out. Please try again.'}
-    except requests.exceptions.RequestException as e:
-        logger.error(f'Groq API request error: {e}')
-        return {'success': False, 'error': 'AI service is currently unavailable.'}
-    except (KeyError, IndexError) as e:
-        logger.error(f'Groq API response parsing error: {e}')
-        return {'success': False, 'error': 'Unexpected response from AI service.'}
+    client = get_groq_client()
+    result = client.chat_completion(
+        messages=[
+            {'role': 'system', 'content': system_prompt},
+            {'role': 'user', 'content': f'Write a description for this task: {title.strip()}'},
+        ],
+        max_tokens=300,
+        temperature=0.7,
+        timeout=15,
+    )
+    if result.get('success'):
+        return {'success': True, 'description': result['content']}
+    return result
 
 
 def get_chat_response(user_message: str, conversation_history: list, user=None) -> dict:
@@ -113,33 +213,15 @@ def get_chat_response(user_message: str, conversation_history: list, user=None) 
     messages.extend(safe_history)
     messages.append({'role': 'user', 'content': user_message.strip()})
 
-    try:
-        response = requests.post(
-            GROQ_API_URL,
-            headers={
-                'Authorization': f'Bearer {settings.GROQ_API_KEY}',
-                'Content-Type': 'application/json',
-            },
-            json={
-                'model': settings.GROQ_MODEL,
-                'messages': messages,
-                'max_tokens': 500,
-                'temperature': 0.8,
-            },
-            timeout=20,
-        )
-        response.raise_for_status()
-        data = response.json()
-        reply = data['choices'][0]['message']['content'].strip()
-        return {'success': True, 'response': reply}
+    client = get_groq_client()
+    result = client.chat_completion(
+        messages=messages,
+        max_tokens=500,
+        temperature=0.8,
+        timeout=20,
+    )
+    if result.get('success'):
+        return {'success': True, 'response': result['content']}
+    return result
 
-    except requests.exceptions.Timeout:
-        logger.error('Groq API chat timeout')
-        return {'success': False, 'error': 'AI service timed out. Please try again.'}
-    except requests.exceptions.RequestException as e:
-        logger.error(f'Groq API chat error: {e}')
-        return {'success': False, 'error': 'AI service is currently unavailable.'}
-    except (KeyError, IndexError) as e:
-        logger.error(f'Groq API chat response parsing error: {e}')
-        return {'success': False, 'error': 'Unexpected response from AI service.'}
 

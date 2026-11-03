@@ -21,7 +21,51 @@
   <!-- Main Content -->
   <div class="main-content" id="mainContent">
     <!-- Top Bar -->
-    {% include "includes/topbar.html" %}
+    <header class="topbar">
+      <div class="d-flex align-items-center gap-3">
+        <button class="sidebar-toggle" id="sidebarToggle" onclick="toggleSidebar()" aria-label="Toggle menu">
+          <i class="bi bi-list"></i>
+        </button>
+        <div class="topbar-title">
+          <h1>{% block page_title %}{% if active_page == 'tasks' %}All Tasks{% elif active_page == 'reports' %}Reports{% elif active_page == 'profile' %}Profile{% else %}Dashboard{% endif %}{% endblock %}</h1>
+          <p class="d-none d-md-block">{% block page_subtitle %}{% if active_page == 'tasks' %}Manage, edit, and track all your tasks.{% elif active_page == 'reports' %}Track your productivity and task progress.{% elif active_page == 'profile' %}Manage your account settings.{% else %}Here's your productivity overview.{% endif %}{% endblock %}</p>
+        </div>
+      </div>
+
+      <div class="topbar-actions">
+        <!-- Notification bell -->
+        <button class="btn-icon" title="Notifications" style="position:relative;border:none;background:none;font-size:18px;color:var(--text-secondary);cursor:pointer;">
+          <i class="bi bi-bell"></i>
+          <span style="position:absolute;top:4px;right:4px;width:7px;height:7px;background:#EF4444;border-radius:50%;border:1.5px solid white;"></span>
+        </button>
+
+        <!-- User Profile display matching reference image -->
+        <a href="{% url 'accounts:profile' %}" style="text-decoration:none;display:flex;align-items:center;gap:10px;padding:4px 8px;border-radius:var(--radius-sm);transition:background 0.15s;" title="View Profile">
+          {% if request.user.profile.avatar %}
+            <img src="{{ request.user.profile.avatar.url }}" alt="{{ request.user.username }}"
+                 style="width:36px;height:36px;border-radius:50%;object-fit:cover;border:1.5px solid var(--border);flex-shrink:0;">
+          {% else %}
+            <div class="user-avatar" style="width:36px;height:36px;font-size:13px;border-radius:50%;background:linear-gradient(135deg, #4F46E5, #7C3AED);color:white;display:flex;align-items:center;justify-content:center;font-weight:600;flex-shrink:0;">
+              {% with request.user.get_full_name as name %}
+                {% if name %}
+                  {{ name|slice:":1"|upper }}{% if name|length > 1 %}{{ name|slice:"-1:"|upper }}{% endif %}
+                {% else %}
+                  {{ request.user.username|slice:":2"|upper }}
+                {% endif %}
+              {% endwith %}
+            </div>
+          {% endif %}
+          <div class="d-none d-sm-block text-start">
+            <div style="font-size:13px;font-weight:600;color:var(--text-primary);line-height:1.2;">
+              {{ request.user.get_full_name|default:request.user.username }}
+            </div>
+            <div style="font-size:11px;color:var(--text-secondary);line-height:1.2;">
+              Member
+            </div>
+          </div>
+        </a>
+      </div>
+    </header>
 
     <!-- Page Content -->
     <div class="page-content">
