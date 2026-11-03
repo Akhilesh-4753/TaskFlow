@@ -189,4 +189,17 @@ class AccountsTests(TestCase):
         self.profile.refresh_from_db()
         self.assertFalse(bool(self.profile.avatar))
 
+    def test_profile_two_column_layout(self):
+        """Verify the Profile page renders a two-column grid layout containing both Edit Profile and Change Password cards."""
+        self.client.login(username='johndoe', password='StrongPassword123!')
+        res = self.client.get(reverse('accounts:profile'))
+        self.assertEqual(res.status_code, 200)
+        self.assertContains(res, 'class="profile-grid"')
+        self.assertContains(res, 'Edit Profile')
+        self.assertContains(res, 'Change Password')
+        self.assertContains(res, 'Password Security')
+        self.assertContains(res, 'Save Changes')
+        self.assertContains(res, 'Update Password')
+
+
 
