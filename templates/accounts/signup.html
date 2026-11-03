@@ -79,48 +79,49 @@
           {% endif %}
         </div>
 
-        <!-- Password -->
-        <div class="form-group">
-          <label class="form-label" for="id_password1">Password <span class="required">*</span></label>
-          <div class="input-icon-group">
-            <i class="bi bi-lock input-icon"></i>
-            <input type="password"
-                   name="{{ form.password1.html_name }}"
-                   id="id_password1"
-                   class="form-control with-icon {% if form.password1.errors %}is-invalid{% endif %}"
-                   placeholder="Create a password"
-                   autocomplete="new-password">
-            <button type="button" class="toggle-password-btn" data-target="id_password1" title="Show/hide password">
-              <i class="bi bi-eye" id="eye_id_password1"></i>
-            </button>
+        <!-- Password & Confirm Password Row -->
+        <div class="auth-form-row">
+          <div class="form-group mb-0">
+            <label class="form-label" for="id_password1">Password <span class="required">*</span></label>
+            <div class="input-icon-group">
+              <i class="bi bi-lock input-icon"></i>
+              <input type="password"
+                     name="{{ form.password1.html_name }}"
+                     id="id_password1"
+                     class="form-control with-icon {% if form.password1.errors %}is-invalid{% endif %}"
+                     placeholder="Create password"
+                     autocomplete="new-password">
+              <button type="button" class="toggle-password-btn" data-target="id_password1" title="Show/hide password">
+                <i class="bi bi-eye" id="eye_id_password1"></i>
+              </button>
+            </div>
+            {% if form.password1.errors %}
+            <div class="invalid-feedback d-block">{{ form.password1.errors|join:", " }}</div>
+            {% endif %}
           </div>
-          {% if form.password1.errors %}
-          <div class="invalid-feedback d-block">{{ form.password1.errors|join:", " }}</div>
-          {% endif %}
-        </div>
 
-        <!-- Confirm Password -->
-        <div class="form-group">
-          <label class="form-label" for="id_password2">Confirm Password <span class="required">*</span></label>
-          <div class="input-icon-group">
-            <i class="bi bi-lock-fill input-icon"></i>
-            <input type="password"
-                   name="{{ form.password2.html_name }}"
-                   id="id_password2"
-                   class="form-control with-icon {% if form.password2.errors %}is-invalid{% endif %}"
-                   placeholder="Confirm your password"
-                   autocomplete="new-password">
-            <button type="button" class="toggle-password-btn" data-target="id_password2" title="Show/hide password">
-              <i class="bi bi-eye" id="eye_id_password2"></i>
-            </button>
+          <div class="form-group mb-0">
+            <label class="form-label" for="id_password2">Confirm Password <span class="required">*</span></label>
+            <div class="input-icon-group">
+              <i class="bi bi-lock-fill input-icon"></i>
+              <input type="password"
+                     name="{{ form.password2.html_name }}"
+                     id="id_password2"
+                     class="form-control with-icon {% if form.password2.errors %}is-invalid{% endif %}"
+                     placeholder="Confirm password"
+                     autocomplete="new-password">
+              <button type="button" class="toggle-password-btn" data-target="id_password2" title="Show/hide password">
+                <i class="bi bi-eye" id="eye_id_password2"></i>
+              </button>
+            </div>
+            {% if form.password2.errors %}
+            <div class="invalid-feedback d-block">{{ form.password2.errors|join:", " }}</div>
+            {% endif %}
           </div>
-          {% if form.password2.errors %}
-          <div class="invalid-feedback d-block">{{ form.password2.errors|join:", " }}</div>
-          {% endif %}
         </div>
 
         <!-- Terms -->
-        <div class="auth-terms mb-3 {% if form.agree_terms.errors %}has-error{% endif %}" id="authTermsWrapper">
+        <div class="auth-terms {% if form.agree_terms.errors %}has-error{% endif %}" id="authTermsWrapper">
           <input type="checkbox"
                  class="form-check-input {% if form.agree_terms.errors %}is-invalid{% endif %}"
                  name="{{ form.agree_terms.html_name }}"
@@ -131,7 +132,7 @@
             I agree to the <a href="#" onclick="event.preventDefault()">Terms of Service</a> and <a href="#" onclick="event.preventDefault()">Privacy Policy</a>
           </label>
         </div>
-        <div class="invalid-feedback mb-2" id="agreeTermsError" style="font-size:12.5px;{% if form.agree_terms.errors %}display:block;{% else %}display:none;{% endif %}">
+        <div class="invalid-feedback" id="agreeTermsError" style="font-size:12px;margin-top:3px;margin-bottom:6px;{% if form.agree_terms.errors %}display:block;{% else %}display:none;{% endif %}">
           {% if form.agree_terms.errors %}{{ form.agree_terms.errors|join:", " }}{% else %}Please accept the Terms of Service and Privacy Policy to create your account.{% endif %}
         </div>
 
