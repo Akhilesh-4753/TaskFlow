@@ -115,9 +115,9 @@ MESSAGE_TAGS = {
 }
 
 # Groq AI Configuration
-GROQ_API_KEY = os.getenv('GROQ_API_KEY', '').strip()
-GROQ_MODEL = os.getenv('GROQ_MODEL', 'llama3-8b-8192').strip()
-GROQ_API_URL = os.getenv('GROQ_API_URL', 'https://api.groq.com/openai/v1/chat/completions').strip()
+GROQ_API_KEY = os.getenv('GROQ_API_KEY', '').strip().strip('\'"')
+GROQ_MODEL = os.getenv('GROQ_MODEL', 'openai/gpt-oss-20b').strip().strip('\'"')
+GROQ_API_URL = os.getenv('GROQ_API_URL', 'https://api.groq.com/openai/v1/chat/completions').strip().strip('\'"')
 
 # Logging Configuration
 LOGGING = {

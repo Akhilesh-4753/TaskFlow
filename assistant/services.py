@@ -4,13 +4,20 @@ All API communication is done server-side. Never expose the API key to the brows
 """
 
 import os
+from pathlib import Path
 import requests
 import logging
+from dotenv import load_dotenv
 from django.conf import settings
 
 logger = logging.getLogger('assistant')
 
+# Ensure environment variables are loaded from project root .env
+BASE_DIR = Path(__file__).resolve().parent.parent
+load_dotenv(BASE_DIR / '.env', override=False)
+
 GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions'
+DEFAULT_GROQ_MODEL = 'openai/gpt-oss-20b'
 MAX_MESSAGE_LENGTH = 2000
 MAX_HISTORY_MESSAGES = 10
 
@@ -23,6 +30,28 @@ PLACEHOLDER_KEYS = {
 }
 
 
+def get_groq_api_key() -> str:
+    """Retrieve GROQ_API_KEY from settings or .env securely, stripping whitespace and quotes."""
+    key = getattr(settings, 'GROQ_API_KEY', None)
+    if key is None or not str(key).strip():
+        load_dotenv(BASE_DIR / '.env')
+        key = os.getenv('GROQ_API_KEY', '')
+    return str(key or '').strip().strip('\'"')
+
+
+def get_groq_model() -> str:
+    """Retrieve GROQ_MODEL from settings or .env, defaulting to an active supported model."""
+    m = getattr(settings, 'GROQ_MODEL', None)
+    if m is None or not str(m).strip() or str(m).strip() == 'llama3-8b-8192':
+        load_dotenv(BASE_DIR / '.env')
+        m = os.getenv('GROQ_MODEL', DEFAULT_GROQ_MODEL)
+    cleaned = str(m or DEFAULT_GROQ_MODEL).strip().strip('\'"')
+    # Gracefully upgrade decommissioned llama3-8b-8192 model
+    if cleaned == 'llama3-8b-8192':
+        cleaned = DEFAULT_GROQ_MODEL
+    return cleaned
+
+
 class GroqClient:
     """
     Groq AI Client wrapper.
@@ -31,8 +60,8 @@ class GroqClient:
     """
 
     def __init__(self, api_key: str = None, model: str = None, api_url: str = None):
-        self._custom_api_key = str(api_key).strip() if api_key is not None else None
-        self._custom_model = str(model).strip() if model is not None else None
+        self._custom_api_key = str(api_key).strip().strip('\'"') if api_key is not None else None
+        self._custom_model = str(model).strip().strip('\'"') if model is not None else None
         self.api_url = api_url or getattr(settings, 'GROQ_API_URL', GROQ_API_URL)
 
         if not self.is_configured():
@@ -48,22 +77,18 @@ class GroqClient:
     def api_key(self) -> str:
         if self._custom_api_key is not None:
             return self._custom_api_key
-        key = getattr(settings, 'GROQ_API_KEY', None)
-        if key is None or not str(key).strip():
-            key = os.getenv('GROQ_API_KEY', '')
-        return str(key or '').strip()
+        return get_groq_api_key()
 
     @property
     def model(self) -> str:
         if self._custom_model is not None:
             return self._custom_model
-        m = getattr(settings, 'GROQ_MODEL', None)
-        if m is None or not str(m).strip():
-            m = os.getenv('GROQ_MODEL', 'llama3-8b-8192')
-        return str(m or 'llama3-8b-8192').strip()
+        return get_groq_model()
 
     def is_configured(self) -> bool:
         """Check if client has a valid, non-placeholder API key."""
+        if self._custom_api_key is not None:
+            return bool(self._custom_api_key and self._custom_api_key.lower() not in PLACEHOLDER_KEYS)
         return is_groq_configured()
 
     def get_headers(self) -> dict:
@@ -120,20 +145,18 @@ _client_instance = None
 
 
 def get_groq_client() -> GroqClient:
-    """Return an initialized GroqClient instance."""
+    """Return an initialized GroqClient instance, refreshing if credentials changed."""
     global _client_instance
-    if _client_instance is None:
+    current_key = get_groq_api_key()
+    if _client_instance is None or _client_instance.api_key != current_key:
         _client_instance = GroqClient()
     return _client_instance
 
 
 def is_groq_configured() -> bool:
     """Check if Groq API is properly configured."""
-    key = getattr(settings, 'GROQ_API_KEY', None)
-    if key is None or not str(key).strip():
-        key = os.getenv('GROQ_API_KEY', '')
-    cleaned = str(key or '').strip()
-    if not cleaned or cleaned.lower() in PLACEHOLDER_KEYS:
+    key = get_groq_api_key()
+    if not key or key.lower() in PLACEHOLDER_KEYS:
         return False
     return True
 
