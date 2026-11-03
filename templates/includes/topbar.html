@@ -11,9 +11,9 @@
 
   <div class="topbar-actions">
     <!-- Notification bell -->
-    <button class="btn-icon" title="Notifications" style="position:relative;border:none;background:none;font-size:18px;color:var(--text-secondary);cursor:pointer;">
+    <button class="btn-icon" id="notificationBellBtn" title="Notifications" onclick="openNotificationModal()" aria-label="View notifications" style="position:relative;border:none;background:none;font-size:18px;color:var(--text-secondary);cursor:pointer;">
       <i class="bi bi-bell"></i>
-      <span style="position:absolute;top:4px;right:4px;width:7px;height:7px;background:#EF4444;border-radius:50%;border:1.5px solid white;"></span>
+      <span id="notificationBadgeDot" style="display:none;position:absolute;top:4px;right:4px;width:7px;height:7px;background:#EF4444;border-radius:50%;border:1.5px solid white;"></span>
     </button>
 
     <!-- User Profile display matching reference image -->
@@ -22,7 +22,7 @@
         <img src="{{ request.user.profile.avatar.url }}" alt="{{ request.user.username }}"
              style="width:36px;height:36px;border-radius:50%;object-fit:cover;border:1.5px solid var(--border);flex-shrink:0;">
       {% else %}
-        <div class="user-avatar" style="width:36px;height:36px;font-size:13px;border-radius:50%;background:linear-gradient(135deg, #4F46E5, #7C3AED);color:white;display:flex;align-items:center;justify-content:center;font-weight:600;flex-shrink:0;">
+        <div class="user-avatar" style="width:36px;height:36px;font-size:13px;border-radius:50%;background:linear-gradient(135deg, #064E3B, #059669);color:white;display:flex;align-items:center;justify-content:center;font-weight:600;flex-shrink:0;">
           {% with request.user.get_full_name as name %}
             {% if name %}
               {{ name|slice:":1"|upper }}{% if name|length > 1 %}{{ name|slice:"-1:"|upper }}{% endif %}

@@ -232,6 +232,115 @@ class TaskTests(TestCase):
         self.assertContains(res, 'task-table-footer')
         self.assertContains(res, 'position: sticky;')
 
+    def test_notifications_requires_login(self):
+        """Notification endpoint requires authentication."""
+        res = self.client.get(reverse('tasks:notifications'))
+        self.assertEqual(res.status_code, 302)
+
+    def test_notifications_authenticated_classification_and_ordering(self):
+        """
+        Verify notification endpoint retrieves pending tasks with due dates,
+        classifies them into Overdue, Due Today, and Upcoming, orders Overdue first,
+        and excludes completed tasks or tasks without due dates.
+        """
+        today = timezone.now().date()
+        # Clean existing tasks for user1
+        Task.objects.filter(user=self.user1).delete()
+
+        # 1. Overdue task
+        t_overdue = Task.objects.create(
+            user=self.user1,
+            title='Overdue Task',
+            priority='high',
+            completed=False,
+            due_date=today - timedelta(days=2)
+        )
+        # 2. Due Today task
+        t_today = Task.objects.create(
+            user=self.user1,
+            title='Due Today Task',
+            priority='medium',
+            completed=False,
+            due_date=today
+        )
+        # 3. Upcoming task
+        t_upcoming = Task.objects.create(
+            user=self.user1,
+            title='Upcoming Task',
+            priority='low',
+            completed=False,
+            due_date=today + timedelta(days=3)
+        )
+        # 4. Completed task with due date (should be EXCLUDED)
+        Task.objects.create(
+            user=self.user1,
+            title='Completed Task',
+            priority='high',
+            completed=True,
+            due_date=today - timedelta(days=1)
+        )
+        # 5. Pending task with NO due date (should be EXCLUDED)
+        Task.objects.create(
+            user=self.user1,
+            title='No Due Date Task',
+            priority='medium',
+            completed=False,
+            due_date=None
+        )
+        # 6. Other user's task (should be EXCLUDED)
+        Task.objects.create(
+            user=self.user2,
+            title='User 2 Task',
+            priority='high',
+            completed=False,
+            due_date=today - timedelta(days=1)
+        )
+
+        self.client.login(username='user1', password='Password123!')
+        res = self.client.get(reverse('tasks:notifications'))
+        self.assertEqual(res.status_code, 200)
+
+        data = res.json()
+        self.assertTrue(data['success'])
+        self.assertEqual(data['count'], 3)
+        self.assertEqual(data['overdue_count'], 1)
+        self.assertEqual(data['due_today_count'], 1)
+        self.assertEqual(data['upcoming_count'], 1)
+
+        tasks = data['tasks']
+        self.assertEqual(len(tasks), 3)
+
+        # First task must be Overdue
+        self.assertEqual(tasks[0]['id'], t_overdue.id)
+        self.assertEqual(tasks[0]['title'], 'Overdue Task')
+        self.assertEqual(tasks[0]['status_badge'], 'overdue')
+        self.assertEqual(tasks[0]['status_label'], 'Overdue')
+        self.assertEqual(tasks[0]['priority'], 'high')
+
+        # Second task must be Due Today
+        self.assertEqual(tasks[1]['id'], t_today.id)
+        self.assertEqual(tasks[1]['title'], 'Due Today Task')
+        self.assertEqual(tasks[1]['status_badge'], 'due_today')
+        self.assertEqual(tasks[1]['status_label'], 'Due Today')
+
+        # Third task must be Upcoming
+        self.assertEqual(tasks[2]['id'], t_upcoming.id)
+        self.assertEqual(tasks[2]['title'], 'Upcoming Task')
+        self.assertEqual(tasks[2]['status_badge'], 'upcoming')
+        self.assertEqual(tasks[2]['status_label'], 'Upcoming')
+
+    def test_notifications_empty_state(self):
+        """Notification endpoint returns empty list when user has no pending due-date tasks."""
+        Task.objects.filter(user=self.user1).delete()
+        self.client.login(username='user1', password='Password123!')
+        res = self.client.get(reverse('tasks:notifications'))
+        self.assertEqual(res.status_code, 200)
+        data = res.json()
+        self.assertTrue(data['success'])
+        self.assertEqual(data['count'], 0)
+        self.assertEqual(data['tasks'], [])
+
+
 
 
 

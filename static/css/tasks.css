@@ -17,12 +17,12 @@
 }
 
 .filter-badge-pill:hover {
-  background: #F1F5F9;
-  color: var(--text-primary);
+  background: #F0FDF4;
+  color: var(--primary);
 }
 
 .filter-badge-pill.active {
-  background: var(--primary);
+  background: linear-gradient(135deg, #064E3B 0%, #047857 100%);
   color: white;
 }
 
@@ -60,7 +60,7 @@
 }
 
 .task-table tbody tr.row-selected {
-  background: #F1F5FD !important;
+  background: #ECFDF5 !important;
 }
 
 /* =====================================================

@@ -339,4 +339,56 @@ def task_suggest_ai_view(request):
     return JsonResponse({'success': False, 'error': result.get('error', 'Failed to generate task suggestion.')}, status=503)
 
 
+@login_required
+def task_notifications_view(request):
+    """
+    Return all pending tasks with a due date for the authenticated user,
+    classified into Overdue, Due Today, and Upcoming, sorted with Overdue first
+    and by due_date ascending.
+    """
+    today = timezone.now().date()
+    pending_tasks = Task.objects.filter(
+        user=request.user,
+        completed=False,
+        due_date__isnull=False
+    ).order_by('due_date')
+
+    overdue_tasks = []
+    due_today_tasks = []
+    upcoming_tasks = []
+
+    for task in pending_tasks:
+        item = {
+            'id': task.pk,
+            'title': task.title,
+            'due_date': task.due_date.strftime('%b %d, %Y'),
+            'priority': task.priority,
+            'priority_display': task.get_priority_display(),
+        }
+        if task.due_date < today:
+            item['status_badge'] = 'overdue'
+            item['status_label'] = 'Overdue'
+            overdue_tasks.append(item)
+        elif task.due_date == today:
+            item['status_badge'] = 'due_today'
+            item['status_label'] = 'Due Today'
+            due_today_tasks.append(item)
+        else:
+            item['status_badge'] = 'upcoming'
+            item['status_label'] = 'Upcoming'
+            upcoming_tasks.append(item)
+
+    all_tasks = overdue_tasks + due_today_tasks + upcoming_tasks
+
+    return JsonResponse({
+        'success': True,
+        'count': len(all_tasks),
+        'overdue_count': len(overdue_tasks),
+        'due_today_count': len(due_today_tasks),
+        'upcoming_count': len(upcoming_tasks),
+        'tasks': all_tasks,
+    })
+
+
+
 

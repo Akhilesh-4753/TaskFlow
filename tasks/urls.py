@@ -12,5 +12,6 @@ urlpatterns = [
     path('<int:pk>/toggle/', views.task_toggle_view, name='task_toggle'),
     path('bulk-toggle/', views.task_bulk_toggle_view, name='task_bulk_toggle'),
     path('suggest/', views.task_suggest_ai_view, name='task_suggest'),
+    path('notifications/', views.task_notifications_view, name='notifications'),
 ]
 

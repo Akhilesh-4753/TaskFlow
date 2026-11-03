@@ -1,0 +1,50 @@
+<!-- Notification Modal -->
+<div id="notificationModalOverlay" class="notification-modal-overlay" onclick="handleNotificationOverlayClick(event)">
+  <div class="notification-modal-box" role="dialog" aria-modal="true" aria-labelledby="notificationModalTitle">
+    <!-- Header -->
+    <div class="notification-modal-header">
+      <div class="d-flex align-items-center gap-2">
+        <div class="notif-header-icon">
+          <i class="bi bi-bell-fill"></i>
+        </div>
+        <div>
+          <h4 id="notificationModalTitle" class="notif-modal-title">Notifications</h4>
+          <p class="notif-modal-subtitle">Pending tasks with due dates</p>
+        </div>
+        <span id="notifCountBadge" class="notif-total-badge" style="display:none;">0</span>
+      </div>
+      <button type="button" class="notif-close-btn" onclick="closeNotificationModal()" aria-label="Close notifications">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+
+    <!-- Body -->
+    <div class="notification-modal-body" id="notificationModalBody">
+      <!-- Loading State -->
+      <div id="notifLoading" class="notif-loading-state">
+        <div class="notif-spinner"></div>
+        <p>Loading notifications...</p>
+      </div>
+
+      <!-- Empty State -->
+      <div id="notifEmpty" class="notif-empty-state" style="display:none;">
+        <div class="notif-empty-icon">
+          <i class="bi bi-check2-circle"></i>
+        </div>
+        <h5>You're all caught up!</h5>
+        <p>No pending tasks with due dates right now.</p>
+      </div>
+
+      <!-- Task List Container -->
+      <div id="notifTaskList" class="notif-task-list" style="display:none;"></div>
+    </div>
+
+    <!-- Footer -->
+    <div class="notification-modal-footer">
+      <a href="{% url 'tasks:task_list' %}" class="notif-view-all-link">
+        View All Tasks in Task Manager <i class="bi bi-arrow-right"></i>
+      </a>
+    </div>
+  </div>
+</div>
+
