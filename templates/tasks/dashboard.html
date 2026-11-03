@@ -118,51 +118,53 @@
     </div>
     <div class="card-body-custom p-0">
       {% if recent_tasks %}
-      <table class="task-table">
-        <tbody>
-          {% for task in recent_tasks %}
-          <tr id="task-row-{{ task.id }}">
-            <td style="width:36px;padding-right:0;">
-              <input type="checkbox"
-                     class="task-checkbox"
-                     {% if task.completed %}checked{% endif %}
-                     onchange="toggleTask({{ task.id }}, this)"
-                     title="{% if task.completed %}Mark as Pending{% else %}Mark as Completed{% endif %}">
-            </td>
-            <td class="task-title-cell" title="{{ task.title }}">
-              <span {% if task.completed %}style="text-decoration:line-through;color:var(--text-muted);"{% endif %}>
-                {{ task.title }}
-              </span>
-            </td>
-            <td style="width:90px;">
-              <span class="badge-priority badge-{{ task.priority }}">{{ task.get_priority_display }}</span>
-            </td>
-            <td style="width:100px;font-size:12.5px;color:var(--text-secondary);white-space:nowrap;">
-              {% if task.due_date %}
-                {{ task.due_date|date:"M d" }}
-              {% else %}
-                {{ task.created_at|date:"M d" }}
-              {% endif %}
-            </td>
-            <td style="width:70px;text-align:right;">
-              <div class="action-btns" style="justify-content:flex-end;">
-                <button class="btn-icon" onclick="openEditModal({{ task.id }})" title="Edit">
-                  <i class="bi bi-pencil"></i>
-                </button>
-                <button class="btn-icon btn-danger-icon" onclick="openDeleteModal({{ task.id }}, '{{ task.title|escapejs }}')" title="Delete">
-                  <i class="bi bi-trash"></i>
-                </button>
-              </div>
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+      <div class="table-responsive" style="overflow-x:auto;-webkit-overflow-scrolling:touch;">
+        <table class="task-table">
+          <tbody>
+            {% for task in recent_tasks %}
+            <tr id="task-row-{{ task.id }}">
+              <td data-label="Status" style="width:36px;padding-right:0;">
+                <input type="checkbox"
+                       class="task-checkbox"
+                       {% if task.completed %}checked{% endif %}
+                       onchange="toggleTask({{ task.id }}, this)"
+                       title="{% if task.completed %}Mark as Pending{% else %}Mark as Completed{% endif %}">
+              </td>
+              <td class="task-title-cell" data-label="Task" title="{{ task.title }}">
+                <span {% if task.completed %}style="text-decoration:line-through;color:var(--text-muted);"{% endif %}>
+                  {{ task.title }}
+                </span>
+              </td>
+              <td data-label="Priority" style="width:90px;">
+                <span class="badge-priority badge-{{ task.priority }}">{{ task.get_priority_display }}</span>
+              </td>
+              <td data-label="Date" style="width:100px;font-size:12.5px;color:var(--text-secondary);white-space:nowrap;">
+                {% if task.due_date %}
+                  {{ task.due_date|date:"M d" }}
+                {% else %}
+                  {{ task.created_at|date:"M d" }}
+                {% endif %}
+              </td>
+              <td data-label="Actions" style="width:70px;text-align:right;">
+                <div class="action-btns" style="justify-content:flex-end;">
+                  <button class="btn-icon" onclick="openEditModal({{ task.id }})" title="Edit">
+                    <i class="bi bi-pencil"></i>
+                  </button>
+                  <button class="btn-icon btn-danger-icon" onclick="openDeleteModal({{ task.id }}, '{{ task.title|escapejs }}')" title="Delete">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
       {% else %}
       <div class="empty-state" style="padding:32px 16px;">
         <div class="empty-state-icon" style="font-size:36px;"><i class="bi bi-check2-circle"></i></div>
         <h5>All caught up!</h5>
-        <p>No recent tasks found.</p>
+        <p>No pending tasks available. You're all caught up!</p>
         <button class="btn-primary-custom" onclick="openCreateModal()">
           <i class="bi bi-plus-lg"></i> Create Task
         </button>

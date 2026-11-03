@@ -103,9 +103,66 @@
 }
 
 /* =====================================================
-   Task Page Layout — No Main Scrollbar + Internal Grid Scroll
+   Task Page Action Bar & Search
    ===================================================== */
-@media (min-width: 769px) {
+.task-action-bar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.task-search-form {
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+.task-search-icon {
+  position: absolute;
+  left: 12px;
+  color: var(--text-muted);
+  font-size: 13px;
+  pointer-events: none;
+}
+
+.task-search-input {
+  padding-left: 34px;
+  width: 220px;
+  border-radius: var(--radius-sm);
+  height: 38px;
+  font-size: 13px;
+}
+
+.task-add-btn {
+  height: 38px;
+}
+
+@media (max-width: 576px) {
+  .task-action-bar {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+  .task-search-form {
+    width: 100%;
+  }
+  .task-search-input {
+    width: 100% !important;
+  }
+  .task-add-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* =====================================================
+   Task Page Layout — No Main Scrollbar + Internal Grid Scroll (Desktop)
+   ===================================================== */
+@media (min-width: 993px) {
   html:has(body.page-tasks),
   body.page-tasks {
     overflow: hidden !important;
@@ -227,8 +284,8 @@
   background: #86CBAA;
 }
 
-/* Mobile Fallback */
-@media (max-width: 768px) {
+/* Tablet & Mobile Fallback (<= 992px) */
+@media (max-width: 992px) {
   body.page-tasks,
   body.page-tasks .app-layout,
   body.page-tasks .main-content {
@@ -252,6 +309,18 @@
     overflow-x: auto;
     overflow-y: visible;
     max-height: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .task-table th,
+  .task-table td {
+    white-space: nowrap;
+  }
+
+  .task-table td.task-title-cell,
+  .task-table td.task-desc-cell {
+    white-space: normal;
+    min-width: 140px;
   }
 }
 

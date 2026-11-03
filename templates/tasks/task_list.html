@@ -9,7 +9,7 @@
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/tasks.css' %}?v={% now 'U' %}">
 <style>
-  @media (min-width: 769px) {
+  @media (min-width: 993px) {
     html:has(body.page-tasks),
     body.page-tasks {
       overflow: hidden !important;
@@ -97,20 +97,18 @@
 
 <div class="tasks-view-container">
   <!-- Search & Add Task Action Bar -->
-  <div class="task-action-bar" style="display:flex;align-items:center;justify-content:flex-end;margin-bottom:12px;flex-wrap:wrap;gap:12px;">
+  <div class="task-action-bar">
     <!-- Search Form -->
-    <form method="get" style="display:flex;align-items:center;position:relative;">
+    <form method="get" class="task-search-form">
       <input type="hidden" name="status" value="{{ status_filter }}">
       <input type="hidden" name="priority" value="{{ priority_filter }}">
       {% if request.GET.overdue %}<input type="hidden" name="overdue" value="1">{% endif %}
-      <i class="bi bi-search"
-        style="position:absolute;left:12px;color:var(--text-muted);font-size:13px;pointer-events:none;"></i>
-      <input type="text" name="search" class="form-control"
-        style="padding-left:34px;width:220px;border-radius:var(--radius-sm);height:38px;font-size:13px;"
+      <i class="bi bi-search task-search-icon"></i>
+      <input type="text" name="search" class="form-control task-search-input"
         placeholder="Search tasks..." value="{{ search_query }}">
     </form>
 
-    <button class="btn-primary-custom" onclick="openCreateModal()" style="height:38px;">
+    <button class="btn-primary-custom task-add-btn" onclick="openCreateModal()">
       <i class="bi bi-plus-lg"></i> Add Task
     </button>
   </div>

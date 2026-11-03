@@ -201,5 +201,43 @@ class AccountsTests(TestCase):
         self.assertContains(res, 'Save Changes')
         self.assertContains(res, 'Update Password')
 
+    def test_signup_requires_terms_acceptance(self):
+        """Verify signup fails with validation error if Terms & Privacy Policy are not accepted."""
+        response = self.client.post(reverse('accounts:signup'), {
+            'first_name': 'No Terms User',
+            'username': 'noterms',
+            'email': 'noterms@example.com',
+            'password1': 'StrongPassword123!',
+            'password2': 'StrongPassword123!',
+            # 'agree_terms' omitted
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(User.objects.filter(username='noterms').exists())
+        self.assertContains(response, 'Please accept the Terms of Service and Privacy Policy to create your account.')
+
+    def test_login_remember_me_enabled(self):
+        """When Remember Me is checked, session should persist for 30 days and not expire on browser close."""
+        response = self.client.post(reverse('accounts:login'), {
+            'username': 'johndoe',
+            'password': 'StrongPassword123!',
+            'remember_me': 'on',
+        })
+        self.assertEqual(response.status_code, 302)
+        session = self.client.session
+        self.assertFalse(session.get_expire_at_browser_close())
+        self.assertEqual(session.get_expiry_age(), 30 * 24 * 60 * 60)
+
+    def test_login_remember_me_disabled(self):
+        """When Remember Me is unchecked, session should expire on browser close."""
+        response = self.client.post(reverse('accounts:login'), {
+            'username': 'johndoe',
+            'password': 'StrongPassword123!',
+            # 'remember_me' omitted
+        })
+        self.assertEqual(response.status_code, 302)
+        session = self.client.session
+        self.assertTrue(session.get_expire_at_browser_close())
+
+
 
 

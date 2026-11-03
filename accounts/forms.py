@@ -57,14 +57,23 @@ class SignupForm(UserCreationForm):
         }),
     )
     agree_terms = forms.BooleanField(
-        required=False,
+        required=True,
         label='I agree to the Terms of Service and Privacy Policy',
-        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input', 'id': 'id_agree_terms'}),
+        error_messages={
+            'required': 'Please accept the Terms of Service and Privacy Policy to create your account.'
+        }
     )
 
     class Meta:
         model = User
         fields = ('first_name', 'username', 'email', 'password1', 'password2', 'agree_terms')
+
+    def clean_agree_terms(self):
+        agree = self.cleaned_data.get('agree_terms')
+        if not agree:
+            raise forms.ValidationError('Please accept the Terms of Service and Privacy Policy to create your account.')
+        return agree
 
     def clean_username(self):
         username = self.cleaned_data.get('username', '').strip()

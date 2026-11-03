@@ -93,8 +93,8 @@
 
         <!-- Remember Me -->
         <div class="form-check mb-16" style="margin-bottom:16px;">
-          <input type="checkbox" class="form-check-input" name="remember_me" id="id_remember_me">
-          <label class="form-check-label" for="id_remember_me" style="font-size:13.5px;color:var(--text-secondary);">Remember me</label>
+          <input type="checkbox" class="form-check-input" name="remember_me" id="id_remember_me" {% if form.remember_me.value %}checked{% endif %} style="cursor:pointer;">
+          <label class="form-check-label" for="id_remember_me" style="font-size:13.5px;color:var(--text-secondary);cursor:pointer;">Remember me</label>
         </div>
 
         <button type="submit" class="auth-submit-btn">Sign In</button>

@@ -32,7 +32,7 @@ def get_user_task_stats(user):
 def dashboard_view(request):
     """Main dashboard with summary stats and recent tasks."""
     stats = get_user_task_stats(request.user)
-    recent_tasks = Task.objects.filter(user=request.user).order_by('-created_at')[:5]
+    recent_tasks = Task.objects.filter(user=request.user, completed=False).order_by('-created_at')[:5]
 
     # Calculate weekly activity for the This Week chart
     from datetime import timedelta

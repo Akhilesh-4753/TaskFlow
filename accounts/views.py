@@ -40,8 +40,12 @@ def login_view(request):
             user = form.get_user()
             remember_me = form.cleaned_data.get('remember_me', False)
             login(request, user)
-            if not remember_me:
-                request.session.set_expiry(0)  # Session expires on browser close
+            if remember_me:
+                # Maintain extended session (30 days) when Remember Me is checked
+                request.session.set_expiry(30 * 24 * 60 * 60)
+            else:
+                # Expire session on browser close when Remember Me is unchecked
+                request.session.set_expiry(0)
             # Create profile if missing (for existing users)
             Profile.objects.get_or_create(user=user)
             messages.success(request, f'Welcome back, {user.first_name or user.username}! 👋')

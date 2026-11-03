@@ -31,8 +31,19 @@
   .reports-charts-grid {
     grid-template-columns: 1fr;
   }
+  .reports-charts-grid > .card[style*="grid-column: span 2"],
+  .reports-charts-grid > .card:nth-child(3) {
+    grid-column: span 1 !important;
+  }
   .reports-lists-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 576px) {
+  .reports-charts-grid,
+  .reports-lists-grid {
+    gap: 14px;
   }
 }
 

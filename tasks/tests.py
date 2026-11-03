@@ -38,6 +38,35 @@ class TaskTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'User 1 Task')
 
+    def test_dashboard_recent_tasks_only_pending(self):
+        """Recent Tasks must only include pending tasks and exclude completed tasks."""
+        self.client.login(username='user1', password='Password123!')
+
+        # Create a completed task
+        Task.objects.create(
+            user=self.user1,
+            title='Completed Task Should Not Appear',
+            completed=True,
+            due_date=timezone.now().date()
+        )
+
+        response = self.client.get(reverse('tasks:dashboard'))
+        self.assertEqual(response.status_code, 200)
+        recent_tasks = response.context['recent_tasks']
+        self.assertIn(self.task1, recent_tasks)
+        self.assertFalse(any(t.completed for t in recent_tasks))
+        self.assertNotContains(response, 'Completed Task Should Not Appear')
+
+    def test_dashboard_recent_tasks_empty_state_message(self):
+        """When there are no pending tasks, the exact empty-state message should be displayed."""
+        self.client.login(username='user1', password='Password123!')
+        # Mark all tasks completed
+        Task.objects.filter(user=self.user1).update(completed=True)
+
+        response = self.client.get(reverse('tasks:dashboard'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "No pending tasks available. You're all caught up!")
+
     def test_create_task(self):
         self.client.login(username='user1', password='Password123!')
         response = self.client.post(reverse('tasks:task_create'), {

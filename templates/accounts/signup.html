@@ -39,7 +39,7 @@
         <p>Join TaskFlow and take control of your work and goals today.</p>
       </div>
 
-      <form method="post" novalidate>
+      <form method="post" novalidate id="signupForm">
         {% csrf_token %}
 
         <!-- Full Name -->
@@ -120,19 +120,20 @@
         </div>
 
         <!-- Terms -->
-        <div class="auth-terms mb-3">
+        <div class="auth-terms mb-3 {% if form.agree_terms.errors %}has-error{% endif %}" id="authTermsWrapper">
           <input type="checkbox"
                  class="form-check-input {% if form.agree_terms.errors %}is-invalid{% endif %}"
                  name="{{ form.agree_terms.html_name }}"
-                 id="{{ form.agree_terms.id_for_label }}"
-                 {% if form.agree_terms.value %}checked{% endif %}>
-          <label for="{{ form.agree_terms.id_for_label }}" style="cursor:pointer;">
-            I agree to the <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>
+                 id="id_agree_terms"
+                 {% if form.agree_terms.value %}checked{% endif %}
+                 style="cursor:pointer;flex-shrink:0;">
+          <label for="id_agree_terms" style="cursor:pointer;margin-bottom:0;">
+            I agree to the <a href="#" onclick="event.preventDefault()">Terms of Service</a> and <a href="#" onclick="event.preventDefault()">Privacy Policy</a>
           </label>
         </div>
-        {% if form.agree_terms.errors %}
-        <div class="invalid-feedback d-block mb-2" style="font-size:12px;">{{ form.agree_terms.errors|join:", " }}</div>
-        {% endif %}
+        <div class="invalid-feedback mb-2" id="agreeTermsError" style="font-size:12.5px;{% if form.agree_terms.errors %}display:block;{% else %}display:none;{% endif %}">
+          {% if form.agree_terms.errors %}{{ form.agree_terms.errors|join:", " }}{% else %}Please accept the Terms of Service and Privacy Policy to create your account.{% endif %}
+        </div>
 
         <!-- Non-field errors and other field errors -->
         {% if form.non_field_errors %}
@@ -161,6 +162,7 @@
 
 {% block extra_js %}
 <script>
+  // Toggle password visibility
   document.querySelectorAll('.toggle-password-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       const targetId = btn.dataset.target;
@@ -175,6 +177,48 @@
       }
     });
   });
+
+  // Terms and Privacy Policy validation
+  const signupForm = document.getElementById('signupForm');
+  const agreeCheckbox = document.getElementById('id_agree_terms');
+  const termsWrapper = document.getElementById('authTermsWrapper');
+  const termsError = document.getElementById('agreeTermsError');
+
+  function validateTerms() {
+    if (!agreeCheckbox || !agreeCheckbox.checked) {
+      if (termsWrapper) termsWrapper.classList.add('has-error');
+      if (agreeCheckbox) agreeCheckbox.classList.add('is-invalid');
+      if (termsError) {
+        termsError.textContent = 'Please accept the Terms of Service and Privacy Policy to create your account.';
+        termsError.style.display = 'block';
+      }
+      return false;
+    } else {
+      if (termsWrapper) termsWrapper.classList.remove('has-error');
+      if (agreeCheckbox) agreeCheckbox.classList.remove('is-invalid');
+      if (termsError) termsError.style.display = 'none';
+      return true;
+    }
+  }
+
+  if (agreeCheckbox) {
+    agreeCheckbox.addEventListener('change', () => {
+      if (agreeCheckbox.checked) {
+        if (termsWrapper) termsWrapper.classList.remove('has-error');
+        agreeCheckbox.classList.remove('is-invalid');
+        if (termsError) termsError.style.display = 'none';
+      }
+    });
+  }
+
+  if (signupForm) {
+    signupForm.addEventListener('submit', (e) => {
+      if (!validateTerms()) {
+        e.preventDefault();
+        agreeCheckbox.focus();
+      }
+    });
+  }
 </script>
 {% endblock %}
 
