@@ -205,7 +205,7 @@
 /* Smooth internal green scrollbar */
 .task-table-scroll-container {
   scrollbar-width: thin;
-  scrollbar-color: #059669 #F0FDF4;
+  scrollbar-color: #A7DCC5 #F1F8F4;
 }
 
 .task-table-scroll-container::-webkit-scrollbar {
@@ -214,17 +214,17 @@
 }
 
 .task-table-scroll-container::-webkit-scrollbar-track {
-  background: #F0FDF4;
+  background: #F1F8F4;
   border-radius: 4px;
 }
 
 .task-table-scroll-container::-webkit-scrollbar-thumb {
-  background: #059669;
+  background: #A7DCC5;
   border-radius: 4px;
 }
 
 .task-table-scroll-container::-webkit-scrollbar-thumb:hover {
-  background: #047857;
+  background: #86CBAA;
 }
 
 /* Mobile Fallback */

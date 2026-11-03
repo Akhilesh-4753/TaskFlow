@@ -882,7 +882,7 @@ body {
 .notification-modal-body,
 .task-table-scroll-container {
   scrollbar-width: thin;
-  scrollbar-color: #059669 #F0FDF4;
+  scrollbar-color: #A7DCC5 #F1F8F4;
 }
 
 .custom-scrollbar-green::-webkit-scrollbar,
@@ -895,21 +895,21 @@ body {
 .custom-scrollbar-green::-webkit-scrollbar-track,
 .notification-modal-body::-webkit-scrollbar-track,
 .task-table-scroll-container::-webkit-scrollbar-track {
-  background: #F0FDF4;
+  background: #F1F8F4;
   border-radius: 4px;
 }
 
 .custom-scrollbar-green::-webkit-scrollbar-thumb,
 .notification-modal-body::-webkit-scrollbar-thumb,
 .task-table-scroll-container::-webkit-scrollbar-thumb {
-  background: #059669;
+  background: #A7DCC5;
   border-radius: 4px;
 }
 
 .custom-scrollbar-green::-webkit-scrollbar-thumb:hover,
 .notification-modal-body::-webkit-scrollbar-thumb:hover,
 .task-table-scroll-container::-webkit-scrollbar-thumb:hover {
-  background: #047857;
+  background: #86CBAA;
 }
 
 /* Loading State */
