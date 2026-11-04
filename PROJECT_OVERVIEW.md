@@ -58,6 +58,7 @@ TaskFlow was developed as a production-grade, portfolio-defining full-stack web 
 | **Data Visualization** | Chart.js | Version 4.4.1 (UMD) | High-performance, canvas-based charting library used to render interactive doughnut charts, bar charts, and smooth weekly line graphs. |
 | **Client-Side Scripting** | Vanilla JavaScript (ES6+) | Modern DOM APIs & `fetch()` | Lightweight, framework-free client interactions: asynchronous modal form submissions, inline task status toggles, real-time character counters, and chat message streaming. |
 | **Image Processing** | Pillow (PIL) | Version 10.0+ | Server-side image format validation, binary header verification, and avatar handling to prevent malicious file uploads. |
+| **Static File Serving & WSGI** | WhiteNoise & Gunicorn | WhiteNoise 6.12 / Gunicorn 26.2 | Direct, high-performance static asset compression (Gzip/Brotli) and caching in production (Render) without external S3/Nginx complexity. WSGI HTTP server for production execution. |
 | **Configuration** | `python-dotenv` | Version 1.0.1 | Strict 12-Factor App compliance: all API keys, SMTP credentials, and security secrets reside securely in `.env` outside the version control tree. |
 
 ---
@@ -323,7 +324,7 @@ I built TaskFlow to change that. It is a full-featured productivity SaaS that co
 🔒 Robust Security: 100% user-scoped ORM data isolation, CSRF protection, PBKDF2 password hashing, and multi-tier binary avatar validation using Pillow.
 🎨 Bespoke Emerald SaaS UI: Clean, modern responsive interface crafted with custom CSS variables, Bootstrap 5, and vanilla JavaScript AJAX workflows.
 
-🛠️ Tech Stack: Python, Django 5, Groq API, Neon PostgreSQL / SQLite, Chart.js, HTML5/CSS3, Bootstrap 5, Vanilla JS (ES6+), Pillow, python-dotenv.
+🛠️ Tech Stack: Python, Django 5, Groq API, Neon PostgreSQL / SQLite, WhiteNoise, Gunicorn, Chart.js, HTML5/CSS3, Bootstrap 5, Vanilla JS (ES6+), Pillow, python-dotenv.
 
 Check out the full repository and architecture documentation here: [Your GitHub Link]
 

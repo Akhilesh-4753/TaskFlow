@@ -43,6 +43,7 @@ It includes an integrated **Groq-powered AI productivity assistant** and **AI ta
 
 - **Backend**: Python 3.10+, Django 5.x / 6.x (MVT, Function-Based Views, Django ORM)
 - **Database**: Neon Serverless PostgreSQL (via `psycopg` v3 & `dj-database-url`) / SQLite (local fallback)
+- **Static Assets & Server**: WhiteNoise 6.x (`CompressedStaticFilesStorage`), Gunicorn WSGI HTTP Server
 - **Frontend**: HTML5, CSS3 (Custom Design System), Vanilla JavaScript (ES6+)
 - **Icons & Visuals**: Bootstrap Icons (`bi`), SVG Logos
 - **Charts**: Chart.js 4.4
@@ -114,6 +115,28 @@ Run the test suite covering authentication, authorization, CRUD operations, data
 ```powershell
 python manage.py test
 ```
+
+---
+
+## Production Deployment (Render)
+
+TaskFlow is pre-configured for seamless cloud deployment on platforms like [Render](https://render.com/):
+
+### 1. Build & Start Commands
+- **Build Command:** `./build.sh` (or `pip install -r requirements.txt && python manage.py collectstatic --noinput && python manage.py migrate`)
+- **Start Command:** `gunicorn config.wsgi:application`
+
+### 2. Environment Variables on Render
+Configure the following in the Render Dashboard Environment settings:
+- `SECRET_KEY`: Long, random secret key.
+- `DEBUG`: `False`
+- `ALLOWED_HOSTS`: `<your-app-name>.onrender.com,127.0.0.1,localhost`
+- `DATABASE_URL`: Your Neon PostgreSQL connection string (`postgresql://...`).
+- `GROQ_API_KEY`: Groq Cloud API key.
+- `EMAIL_HOST_USER` / `EMAIL_HOST_PASSWORD`: Transactional Gmail SMTP credentials.
+
+### 3. Static Files & WhiteNoise
+Static assets (CSS, JS, SVGs) are automatically collected into `staticfiles/` during the build step and served directly through `WhiteNoiseMiddleware` using `CompressedStaticFilesStorage` with Gzip and Brotli compression, ensuring fast load times and reliable asset delivery without external CDN dependencies.
 
 ---
 

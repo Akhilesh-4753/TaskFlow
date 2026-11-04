@@ -191,8 +191,10 @@ E:\BlackBox\TaskFlow\
 - **Responsibility:** Master project configuration. Defines installed apps, middleware pipeline, database parameters, template engines, static/media directories, Groq API configurations, and Gmail SMTP parameters.
 - **Important Variables:**
   - `INSTALLED_APPS`: Declares standard Django contrib apps plus `accounts`, `tasks`, `reports`, `assistant`, `chatbot`.
-  - `MIDDLEWARE`: Security, session, common, CSRF, auth, message, and clickjacking middlewares.
+  - `MIDDLEWARE`: Standard security and session stack, augmented with `whitenoise.middleware.WhiteNoiseMiddleware` positioned directly after `SecurityMiddleware` for production static file serving.
   - `DATABASES`: Configured dynamically via `DATABASE_URL` using `dj-database-url` and `psycopg` (Neon PostgreSQL with connection pooling & serverless optimization), with fallback to local SQLite (`BASE_DIR / 'db.sqlite3'`).
+  - `STATIC_URL`, `STATICFILES_DIRS`, `STATIC_ROOT`: Defines static routing (`/static/`), source directory (`static/`), and collected distribution directory (`staticfiles/`).
+  - `STORAGES`: Configures `whitenoise.storage.CompressedStaticFilesStorage` for `"staticfiles"`, pre-compressing static assets with Gzip and Brotli while serving them with high reliability and zero strict-manifest lookup dependencies.
   - `GROQ_API_KEY`, `GROQ_MODEL`: Loaded from `.env`.
   - `EMAIL_BACKEND`, `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD`: SMTP configuration with fallback to console backend in development if credentials are empty.
   - `TASK_REMINDER_DAYS_BEFORE_DUE`, `ENABLE_NOTIFICATION_SCHEDULER`, `NOTIFICATION_CHECK_INTERVAL_SECONDS`: Background scheduler controls.
@@ -821,6 +823,36 @@ python manage.py seed_demo_data
 python manage.py runserver
 ```
 
+### 5. Production Deployment on Render (Static Files & WhiteNoise Pipeline)
+TaskFlow is configured for turnkey cloud deployment on Render (or any Linux container platform):
+
+#### Build & Start Specifications
+- **Build Command:** `./build.sh` (or `pip install -r requirements.txt && python manage.py collectstatic --noinput && python manage.py migrate`)
+- **Start Command:** `gunicorn config.wsgi:application`
+
+#### Deployment Script (`build.sh`)
+```bash
+#!/usr/bin/env bash
+set -o errexit
+
+# Install production dependencies
+pip install -r requirements.txt
+
+# Collect and pre-compress static assets into staticfiles/
+python manage.py collectstatic --noinput
+
+# Apply database migrations to active database (Neon PostgreSQL)
+python manage.py migrate
+```
+
+#### WhiteNoise Static Asset Serving Architecture
+1. **Middleware Placement:** `whitenoise.middleware.WhiteNoiseMiddleware` is registered immediately following `django.middleware.security.SecurityMiddleware` in `config/settings.py`. It intercepts all `/static/...` requests at the WSGI layer, serving assets with minimal overhead before Django routing.
+2. **Storage Backend:** Configured with `whitenoise.storage.CompressedStaticFilesStorage` under `STORAGES["staticfiles"]`:
+   - Pre-compresses static files into both `.gz` (Gzip) and `.br` (Brotli) formats during `collectstatic`.
+   - Avoids the rigid manifest requirements of `CompressedManifestStaticFilesStorage`, which fails with `MissingFileError` (HTTP 500) if a CSS file references an external font, relative asset, or cache-busting query parameter (`?v=...`).
+   - Serves original filenames directly (`/static/css/main.css`, `/static/css/auth.css`), ensuring immediate browser compatibility and zero 404 unstyled page renders.
+3. **Template Asset Linking:** All frontend templates strictly use `{% load static %}` and `{% static 'path/to/asset' %}` dynamic resolution. Hardcoded local paths are forbidden.
+
 ---
 
 ## 12. Error Handling & Debugging Guide
@@ -833,6 +865,7 @@ python manage.py runserver
 | 403 Forbidden on AJAX modal POST | Missing or invalid CSRF token header | Verify that `getCsrfToken()` retrieves `csrftoken` from cookie or meta tag, and attaches `'X-CSRFToken'`. |
 | Background scheduler fires duplicate emails in dev | Auto-reloader spawned second worker | `tasks/email_scheduler.py` already includes `os.environ.get('RUN_MAIN') == 'true'` guard. Verify custom startup scripts preserve this check. |
 | `TypeError: args or kwargs must be provided.` in admin | Calling `format_html()` on static strings without placeholder arguments in custom `ModelAdmin` methods | In modern Django (5.0+ / 6.x), `format_html(format_string, *args, **kwargs)` strictly requires at least one positional or keyword argument. Use `mark_safe(...)` for static HTML badges with no format arguments. |
+| Production app on Render renders unstyled (404 on `/static/...`) | Missing `collectstatic` in build step, `WhiteNoiseMiddleware` omitted, or manifest lookup failure in `CompressedManifestStaticFilesStorage` | Ensure `whitenoise.middleware.WhiteNoiseMiddleware` is in `MIDDLEWARE` immediately after `SecurityMiddleware`, set `STORAGES["staticfiles"]["BACKEND"]` to `'whitenoise.storage.CompressedStaticFilesStorage'`, and include `python manage.py collectstatic --noinput` in `build.sh`. |
 
 ---
 
