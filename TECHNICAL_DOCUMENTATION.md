@@ -192,7 +192,7 @@ E:\BlackBox\TaskFlow\
 - **Important Variables:**
   - `INSTALLED_APPS`: Declares standard Django contrib apps plus `accounts`, `tasks`, `reports`, `assistant`, `chatbot`.
   - `MIDDLEWARE`: Security, session, common, CSRF, auth, message, and clickjacking middlewares.
-  - `DATABASES`: Default SQLite configuration (`BASE_DIR / 'db.sqlite3'`).
+  - `DATABASES`: Configured dynamically via `DATABASE_URL` using `dj-database-url` and `psycopg` (Neon PostgreSQL with connection pooling & serverless optimization), with fallback to local SQLite (`BASE_DIR / 'db.sqlite3'`).
   - `GROQ_API_KEY`, `GROQ_MODEL`: Loaded from `.env`.
   - `EMAIL_BACKEND`, `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD`: SMTP configuration with fallback to console backend in development if credentials are empty.
   - `TASK_REMINDER_DAYS_BEFORE_DUE`, `ENABLE_NOTIFICATION_SCHEDULER`, `NOTIFICATION_CHECK_INTERVAL_SECONDS`: Background scheduler controls.
