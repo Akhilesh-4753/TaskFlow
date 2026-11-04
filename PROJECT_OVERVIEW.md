@@ -50,7 +50,7 @@ TaskFlow was developed as a production-grade, portfolio-defining full-stack web 
 | Layer / Subsystem | Technology | Version / Spec | Why It Was Chosen |
 |---|---|---|---|
 | **Backend Framework** | Python & Django | Python 3.13 / Django 5.1.3 | Industry standard for secure, maintainable, batteries-included web applications. Provides built-in ORM, robust authentication, session management, and CSRF protection. |
-| **Database** | SQLite (Development / Demo) | SQLite 3 via Django ORM | Lightweight, zero-configuration relational database ideal for development and isolated environments. Fully abstracted via Django ORM for seamless PostgreSQL / MySQL migration in production. |
+| **Database** | Neon Serverless PostgreSQL / SQLite (Fallback) | PostgreSQL 16+ via `psycopg` (v3) & `dj-database-url` | Serverless cloud PostgreSQL with PgBouncer connection pooling, SSL encryption, and high concurrency. Fully managed on Neon with instant scalability, connection health checks, and automatic fallback to SQLite for local development. |
 | **AI Integration** | Groq Cloud API | REST API / Model: `openai/gpt-oss-20b` | High-throughput, low-latency LLM inference. Enables near-instantaneous responses for interactive chat and task suggestion workflows. |
 | **Email Automation** | Gmail SMTP / Python `smtplib` | Port 587 (TLS) / `EmailMultiAlternatives` | Reliable transactional email delivery with zero external infrastructure overhead (no Redis/Celery required for basic deployments). Generates dual-format HTML and plain-text emails. |
 | **Frontend Styling** | Custom CSS3 + Bootstrap 5 | Bootstrap 5.3 Grid + Custom Theme Tokens | Modern SaaS aesthetic featuring a custom emerald green gradient palette (`#047857`, `#065F46`, `#34D399`), custom CSS variables, and full responsiveness across mobile, tablet, and desktop screens. |
@@ -323,15 +323,15 @@ I built TaskFlow to change that. It is a full-featured productivity SaaS that co
 🔒 Robust Security: 100% user-scoped ORM data isolation, CSRF protection, PBKDF2 password hashing, and multi-tier binary avatar validation using Pillow.
 🎨 Bespoke Emerald SaaS UI: Clean, modern responsive interface crafted with custom CSS variables, Bootstrap 5, and vanilla JavaScript AJAX workflows.
 
-🛠️ Tech Stack: Python, Django 5, Groq API, SQLite/PostgreSQL, Chart.js, HTML5/CSS3, Bootstrap 5, Vanilla JS (ES6+), Pillow, python-dotenv.
+🛠️ Tech Stack: Python, Django 5, Groq API, Neon PostgreSQL / SQLite, Chart.js, HTML5/CSS3, Bootstrap 5, Vanilla JS (ES6+), Pillow, python-dotenv.
 
 Check out the full repository and architecture documentation here: [Your GitHub Link]
 
-#Django #Python #FullStack #WebDevelopment #AI #Groq #Productivity #SoftwareEngineering #Portfolio #OpenSource
+#Django #Python #FullStack #WebDevelopment #AI #Groq #PostgreSQL #Neon #Productivity #SoftwareEngineering #Portfolio #OpenSource
 ```
 
 ### Relevant Technical Skills
-`Python` • `Django Framework` • `Django ORM` • `Groq Cloud AI API` • `RESTful Architecture` • `Email Automation (SMTP)` • `JavaScript (ES6+)` • `Chart.js` • `Bootstrap 5` • `CSS3 Variables & Responsive Design` • `Web Security & CSRF` • `Pillow (PIL)` • `Git & GitHub`
+`Python` • `Django Framework` • `Django ORM` • `Neon Serverless PostgreSQL` • `psycopg (v3)` • `Groq Cloud AI API` • `RESTful Architecture` • `Email Automation (SMTP)` • `JavaScript (ES6+)` • `Chart.js` • `Bootstrap 5` • `CSS3 Variables & Responsive Design` • `Web Security & CSRF` • `Pillow (PIL)` • `Git & GitHub`
 
 ### Suggested Hashtags
 `#Python` `#Django` `#WebDevelopment` `#FullStackDevelopment` `#SoftwareEngineering` `#GroqAI` `#SaaS` `#Productivity` `#PortfolioProject` `#BackendDeveloper`

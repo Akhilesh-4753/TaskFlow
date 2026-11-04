@@ -22,7 +22,7 @@ TaskFlow is a Django-based personal productivity and task management web applica
 
 ### Technical Stack & Key Architecture
 - **Framework:** Django 5.1.3 (Python 3.13)
-- **Database:** SQLite with Django ORM
+- **Database:** Neon PostgreSQL (Cloud & Production) / SQLite (Local Fallback) with Django ORM
 - **AI Integration:** Centralized `ai` package interfacing with Groq Cloud API (`openai/gpt-oss-20b`)
 - **Email Delivery:** Python `smtplib` via Gmail SMTP with dual-format (HTML & TXT) templates
 - **Frontend:** Bootstrap 5, Bootstrap Icons, Chart.js 4.4.1, custom CSS (Emerald-mint theme), Vanilla JavaScript (ES6+)

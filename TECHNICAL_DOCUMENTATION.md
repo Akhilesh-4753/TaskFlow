@@ -15,7 +15,7 @@ TaskFlow is a monolithic web application built following the **Django Model-View
 1. **Monolithic Modularity:** Applications are decoupled into dedicated domains (`accounts`, `tasks`, `reports`, `assistant`, `ai`), adhering to Django's reusable app convention.
 2. **Dual Response Model:** Views support traditional HTML rendering for full page navigation and structured JSON responses (`JsonResponse`) when queried with an `X-Requested-With: XMLHttpRequest` header.
 3. **Strict User-Data Partitioning:** Every database read, write, update, and delete operation is explicitly scoped to `request.user`. No multi-tenant data leakage or Insecure Direct Object References (IDOR) can occur.
-4. **Environment Isolation:** Configuration parameters, third-party credentials, and database settings are strictly externalized via `python-dotenv` and loaded through `config/settings.py`.
+4. **Environment Isolation & Cloud Persistence:** Configuration parameters, third-party credentials, and database connection strings (`DATABASE_URL`) are strictly externalized via `python-dotenv` and loaded through `config/settings.py`. The application connects to Neon Serverless PostgreSQL with connection pooling and SSL encryption, with automatic fallback to SQLite for local development.
 5. **Lightweight Concurrency:** Background operations (e.g., periodic email checks) are handled via a managed in-process Python daemon thread or dedicated CLI management commands, avoiding mandatory dependencies on Redis or Celery for basic standalone deployments.
 
 ### Application Entry Points
@@ -45,7 +45,7 @@ E:\BlackBox\TaskFlow\
 ├── requirements.txt                  # Python package dependencies
 ├── manage.py                         # Django administrative command script
 ├── settings.py                       # Root proxy delegating to config.settings
-├── db.sqlite3                        # SQLite database file
+├── db.sqlite3                        # Local SQLite database file (used when DATABASE_URL is unset)
 │
 ├── config/                           # Project configuration package
 │   ├── __init__.py
@@ -436,7 +436,7 @@ sequenceDiagram
     participant URL as config/urls.py & tasks/urls.py
     participant View as tasks/views.py (task_create_view)
     participant Form as tasks/forms.py (TaskForm)
-    participant DB as SQLite Database (Task Model)
+    participant DB as Neon PostgreSQL / SQLite Database (Task Model)
     participant Response as JSON / Template
 
     User->>URL: POST /tasks/create/ (Payload: JSON/Form Data)
@@ -545,6 +545,55 @@ erDiagram
   ```python
   Task.objects.filter(user=request.user, id__in=task_ids).update(completed=True)
   ```
+
+---
+
+### 6.1 Database Engine Architecture (Neon Serverless PostgreSQL & SQLite Dual Support)
+
+TaskFlow implements a cloud-ready, dual-tier database configuration in `config/settings.py` providing seamless deployment on Neon Serverless PostgreSQL alongside a local SQLite fallback:
+
+```python
+# Database - Neon PostgreSQL via DATABASE_URL, with SQLite fallback
+DATABASE_URL = os.getenv('DATABASE_URL')
+if DATABASE_URL:
+    DATABASES = {
+        'default': dj_database_url.config(
+            default=DATABASE_URL,
+            conn_max_age=600,
+            conn_health_checks=True,
+        )
+    }
+    # Neon serverless PgBouncer pooler optimization
+    DATABASES['default']['DISABLE_SERVER_SIDE_CURSORS'] = True
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
+```
+
+#### Key Architecture Components:
+1. **Neon Serverless PostgreSQL:**
+   - **Engine & Driver:** `django.db.backends.postgresql` powered by `psycopg` (v3 binary `psycopg[binary]>=3.3.7`).
+   - **Configuration Parsing:** Configured dynamically via `dj-database-url` (`dj_database_url.config()`), extracting host, database name, user, password, and port from `DATABASE_URL`.
+   - **Connection Lifecycle & Pooling:** Employs `conn_max_age=600` (reuses database connections up to 10 minutes) and `conn_health_checks=True` to eliminate redundant TCP/TLS handshakes and keep request latencies low.
+   - **PgBouncer Pooler Optimization:** Sets `DISABLE_SERVER_SIDE_CURSORS = True` on the database options dict. This prevents errors when connecting through Neon's transaction pooler endpoints (`-pooler.region.aws.neon.tech`).
+   - **Transport Security:** Requires TLS (`sslmode=require`) for all connections, ensuring all database traffic is encrypted in transit.
+
+2. **SQLite Local Development Fallback:**
+   - When `DATABASE_URL` is unset or commented out in `.env`, the system automatically defaults to `django.db.backends.sqlite3` storing data at `BASE_DIR / 'db.sqlite3'`.
+   - Allows zero-dependency onboarding and offline local development without needing cloud credentials or Docker containers.
+
+3. **Database Migration Workflow:**
+   - Schema migrations (`python manage.py makemigrations`) are engine-agnostic and committed to version control.
+   - Running `python manage.py migrate` automatically detects the active database target and creates/updates all tables (`accounts`, `tasks`, `auth`, `admin`, `sessions`, `contenttypes`).
+   - Seeding demo data (`python manage.py seed_demo_data`) populates the active database with the demo superuser (`akhilesh`) and 24 sample tasks across various priority and deadline states.
+
+4. **Credential Isolation:**
+   - Database connection strings with sensitive credentials must strictly reside in `.env`.
+   - Never commit raw database URLs, hosts, or passwords into documentation, code files, or Git history.
 
 ---
 
@@ -729,6 +778,9 @@ SECRET_KEY=your-django-secret-key-at-least-50-characters
 DEBUG=True
 ALLOWED_HOSTS=127.0.0.1,localhost
 
+# Database Configuration (Neon Serverless PostgreSQL; omit or comment out to default to SQLite)
+DATABASE_URL=postgresql://<user>:<password>@<ep-sample-pooler>.<region>.aws.neon.tech/<dbname>?sslmode=require
+
 # Groq Cloud AI
 GROQ_API_KEY=gsk_your_groq_api_key_here
 GROQ_MODEL=openai/gpt-oss-20b
@@ -751,9 +803,16 @@ NOTIFICATION_CHECK_INTERVAL_SECONDS=3600
 ```
 
 ### 3. Database Migration & Seeding
+When `DATABASE_URL` is present in `.env`, migrations and seeding apply directly to the Neon PostgreSQL database. If `DATABASE_URL` is omitted, operations automatically target the local `db.sqlite3` file:
+
 ```bash
+# Generate schema migrations (if models have changed)
 python manage.py makemigrations
+
+# Apply migrations to active database (Neon PostgreSQL or SQLite fallback)
 python manage.py migrate
+
+# Seed demo user ('akhilesh', password: 'Password123!') with sample tasks
 python manage.py seed_demo_data
 ```
 

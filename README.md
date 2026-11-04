@@ -1,6 +1,6 @@
 # TaskFlow — Modern Task Management Web Application
 
-TaskFlow is a responsive, feature-rich task management web application built with **Python**, **Django MVT**, **SQLite**, and vanilla **JavaScript**, styled with a custom design system inspired by modern SaaS productivity platforms.
+TaskFlow is a responsive, feature-rich task management web application built with **Python**, **Django MVT**, **Neon PostgreSQL / SQLite**, and vanilla **JavaScript**, styled with a custom design system inspired by modern SaaS productivity platforms.
 
 It includes an integrated **Groq-powered AI productivity assistant** and **AI task description generator**, real-time **Chart.js** analytics, complete database-backed task CRUD with modals, and strict user data isolation.
 
@@ -42,7 +42,7 @@ It includes an integrated **Groq-powered AI productivity assistant** and **AI ta
 ## Technology Stack
 
 - **Backend**: Python 3.10+, Django 5.x / 6.x (MVT, Function-Based Views, Django ORM)
-- **Database**: SQLite3
+- **Database**: Neon Serverless PostgreSQL (via `psycopg` v3 & `dj-database-url`) / SQLite (local fallback)
 - **Frontend**: HTML5, CSS3 (Custom Design System), Vanilla JavaScript (ES6+)
 - **Icons & Visuals**: Bootstrap Icons (`bi`), SVG Logos
 - **Charts**: Chart.js 4.4
@@ -73,19 +73,26 @@ Copy `.env.example` to `.env`:
 ```powershell
 Copy-Item .env.example .env
 ```
-Open `.env` in any text editor and optionally add your [Groq API Key](https://console.groq.com/):
+Open `.env` in any text editor and configure your environment variables:
 ```env
 SECRET_KEY=django-insecure-taskflow-secret-key-12345
 DEBUG=True
+ALLOWED_HOSTS=127.0.0.1,localhost
+
+# Database (Neon PostgreSQL connection string, or omit to use local SQLite)
+DATABASE_URL=postgresql://<user>:<password>@<ep-sample-pooler>.<region>.aws.neon.tech/<dbname>?sslmode=require
+
+# Groq Cloud AI
 GROQ_API_KEY=gsk_your_groq_api_key_here
 GROQ_MODEL=llama3-8b-8192
-ALLOWED_HOSTS=127.0.0.1,localhost
 ```
-*(Note: TaskFlow runs normally even without a Groq API key; the AI assistant will simply display a friendly setup notice).*
+*(Note: TaskFlow runs normally even without a Groq API key or external database; omitting `DATABASE_URL` defaults automatically to local SQLite `db.sqlite3`).*
 
 ### 5. Apply Database Migrations
+Run database migrations to initialize tables (automatically applies to Neon PostgreSQL when `DATABASE_URL` is set, or local SQLite otherwise):
 ```powershell
 python manage.py migrate
+python manage.py seed_demo_data
 ```
 
 ### 6. Create an Admin Superuser (Optional)
