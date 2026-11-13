@@ -1,5 +1,7 @@
 # TaskFlow — Modern Task Management Web Application
 
+> 🌐 **Portfolio Case Study & Architecture:** Explore full architectural breakdowns, screenshots, and features at **[akhileshp.com/projects/taskflow](https://akhileshp.com/projects/taskflow)**.
+
 TaskFlow is a responsive, feature-rich task management web application built with **Python**, **Django MVT**, **Neon PostgreSQL / SQLite**, and vanilla **JavaScript**, styled with a custom design system inspired by modern SaaS productivity platforms.
 
 It includes an integrated **Groq-powered AI productivity assistant** and **AI task description generator**, real-time **Chart.js** analytics, complete database-backed task CRUD with modals, and strict user data isolation.
